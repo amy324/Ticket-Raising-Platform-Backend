@@ -4,6 +4,8 @@ go 1.21.6
 
 require github.com/BurntSushi/toml v1.3.2
 
+require github.com/dgrijalva/jwt-go v3.2.0+incompatible // indirect
+
 require (
 	github.com/PuerkitoBio/goquery v1.5.1 // indirect
 	github.com/alexedwards/scs/redisstore v0.0.0-20231113091146-cef4b05350c8 // indirect
@@ -23,6 +25,7 @@ require (
 	github.com/jackc/pgservicefile v0.0.0-20221227161230-091c0ba34f0a // indirect
 	github.com/jackc/pgtype v1.14.0 // indirect
 	github.com/jackc/pgx/v4 v4.18.1 // indirect
+	github.com/joho/godotenv v1.5.1
 	github.com/toorop/go-dkim v0.0.0-20201103131630-e1cd1a0a5208 // indirect
 	github.com/vanng822/css v1.0.1 // indirect
 	github.com/vanng822/go-premailer v1.20.2 // indirect

@@ -48,6 +48,7 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
+// LoginHandler
 func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	var credentials struct {
 		Email    string `json:"email"`
@@ -71,16 +72,37 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Generate JWT token
-	token, err := generateJWT(user)
+	// Generate both access and refresh JWT tokens
+	accessToken, err := generateJWT(user, os.Getenv("JWT_ACCESS_KEY"))
 	if err != nil {
-		fmt.Println("Error generating JWT token:", err)
+		fmt.Println("Error generating access JWT token:", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
 
-	// Include the token in the response
-	response := map[string]interface{}{"message": "Login successful", "user": user, "token": token}
+	refreshToken, err := generateJWT(user, os.Getenv("JWT_REFRESH_KEY"))
+	if err != nil {
+		fmt.Println("Error generating refresh JWT token:", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	// Insert the access token into the database
+	_, err = data.CreateAccessToken(user.ID, user.Email, accessToken)
+	if err != nil {
+		fmt.Println("Error inserting access token into the database:", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	// Include both tokens in the response
+	response := map[string]interface{}{
+		"message":      "Login successful",
+		"user":         user,
+		"accessToken":  accessToken,
+		"refreshToken": refreshToken,
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 
@@ -89,7 +111,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // Function to generate JWT token
-func generateJWT(user *data.User) (string, error) {
+func generateJWT(user *data.User, secretKey string) (string, error) {
 	// Set the expiration time for the token (you can customize this)
 	expirationTime := time.Now().Add(24 * time.Hour)
 
@@ -103,12 +125,12 @@ func generateJWT(user *data.User) (string, error) {
 	// Create the token with the claims
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
-	// Sign the token with a secret key (replace with your own secret key)
-	secretKey := []byte(os.Getenv("JWT_SECRET_KEY"))
-	if len(secretKey) == 0 {
-		log.Fatal("JWT_SECRET_KEY is not set in the environment")
+	// Sign the token with the provided secret key
+	key := []byte(secretKey)
+	if len(key) == 0 {
+		log.Fatal("JWT secret key is not set")
 	}
-	signedToken, err := token.SignedString(secretKey)
+	signedToken, err := token.SignedString(key)
 	if err != nil {
 		return "", err
 	}
@@ -137,6 +159,15 @@ func ProtectedHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
+// ...
+func LogoutHandler(w http.ResponseWriter, r *http.Request) {
+	// You can perform any additional cleanup or token invalidation here
+
+	// Return a response without a token to simulate logout
+	response := map[string]interface{}{"message": "Logout successful"}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
 func main() {
 	// Initialize database connection
 	db, err := sql.Open("mysql", "root:password@tcp(127.0.0.1:3306)/backend_db")
@@ -166,6 +197,9 @@ func main() {
 
 	// Protected endpoint (requires authentication)
 	router.Handle("/protected", validateToken(http.HandlerFunc(ProtectedHandler))).Methods("GET")
+
+	// Logout endpoint (no authentication required)
+	router.HandleFunc("/logout", LogoutHandler).Methods("POST") // <-- Fix: Use LogoutHandler
 
 	// Hello, World! endpoint (no authentication required)
 	router.HandleFunc("/", HelloWorldHandler).Methods("GET")
