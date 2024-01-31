@@ -71,16 +71,16 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
 		return
 	}
-
-	// Generate both access and refresh JWT tokens
-	accessToken, err := generateJWT(user, os.Getenv("JWT_ACCESS_KEY"))
+	// Generate access token with 30 minutes expiry
+	accessToken, err := generateJWT(user, os.Getenv("JWT_ACCESS_KEY"), 30*time.Minute)
 	if err != nil {
 		fmt.Println("Error generating access JWT token:", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
 
-	refreshToken, err := generateJWT(user, os.Getenv("JWT_REFRESH_KEY"))
+	// Generate refresh token with 30 days expiry
+	refreshToken, err := generateJWT(user, os.Getenv("JWT_REFRESH_KEY"), 30*24*time.Hour)
 	if err != nil {
 		fmt.Println("Error generating refresh JWT token:", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -110,14 +110,14 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Printf("User %s successfully logged in\n", user.Email)
 }
 
-// Function to generate JWT token
-func generateJWT(user *data.User, secretKey string) (string, error) {
-	// Set the expiration time for the token (you can customize this)
-	expirationTime := time.Now().Add(24 * time.Hour)
+// Function to generate JWT token with expiration time
+func generateJWT(user *data.User, secretKey string, expirationTime time.Duration) (string, error) {
+	// Set the expiration time for the token
+	expiration := time.Now().Add(expirationTime)
 
 	// Create the JWT claims
 	claims := &jwt.StandardClaims{
-		ExpiresAt: expirationTime.Unix(),
+		ExpiresAt: expiration.Unix(),
 		IssuedAt:  time.Now().Unix(),
 		Subject:   strconv.Itoa(user.ID),
 	}
@@ -130,6 +130,7 @@ func generateJWT(user *data.User, secretKey string) (string, error) {
 	if len(key) == 0 {
 		log.Fatal("JWT secret key is not set")
 	}
+
 	signedToken, err := token.SignedString(key)
 	if err != nil {
 		return "", err
