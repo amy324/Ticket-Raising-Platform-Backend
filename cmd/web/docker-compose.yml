@@ -13,9 +13,9 @@ services:
       # MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     volumes:
-      - ./db-data/mysql/:/var/lib/mysql/  # Mount volume for persistent data storage
-
-
+      #type: bind
+        source: ./db-data/mysql/
+        #target: /var/lib/mysql
 
   #  start Redis, and ensure that data is stored to a mounted volume
   redis:

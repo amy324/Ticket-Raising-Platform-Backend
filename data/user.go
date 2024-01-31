@@ -88,7 +88,7 @@ func (u *User) Create() (int, error) {
 
 	var newID int
 	stmt := `
-    INSERT INTO users (email, first_name, last_name, password, pin_number, user_active, is_admin, refresh_jwt)
+    INSERT INTO users (email, first_name, last_name, password, pin_number, user_active, is_admin, refreshJWT)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
 
 	res, err := db.ExecContext(ctx, stmt,
@@ -210,25 +210,84 @@ func AuthenticateUser(email, password string) (*User, error) {
 }
 
 // CreateAccessToken function
-func CreateAccessToken(userID int, email string, accessJWT string) (int, error) {
+func CreateAccessToken(userID int, userEmail string, accessToken string) (int64, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
 	defer cancel()
 
-	stmt := `
-        INSERT INTO access_tokens (user_id, email, accessJWT)
-        VALUES (?, ?, ?)`
+	// Check if the access token already exists for the user
+	var existingAccessToken string
+	err := db.QueryRowContext(ctx, "SELECT accessJWT FROM access_tokens WHERE user_id = ?", userID).Scan(&existingAccessToken)
 
-	res, err := db.ExecContext(ctx, stmt, userID, email, accessJWT)
+	if err == sql.ErrNoRows {
+		// If no rows are found, insert the access token for the user
+		result, err := db.ExecContext(ctx, "INSERT INTO access_tokens (user_id, user_email, accessJWT) VALUES (?, ?, ?)", userID, userEmail, accessToken)
+		if err != nil {
+			return 0, err
+		}
+
+		return result.LastInsertId()
+	} else if err != nil {
+		return 0, err
+	}
+
+	// If the access token already exists, update it
+	_, err = db.ExecContext(ctx, "UPDATE access_tokens SET accessJWT = ? WHERE user_id = ?", accessToken, userID)
 	if err != nil {
 		return 0, err
 	}
 
-	lastInsertID, err := res.LastInsertId()
+	// Return a dummy LastInsertId, as it's not relevant for updates
+	return 0, nil
+}
+
+// GetUserByID retrieves a user by ID
+func GetUserByID(userID int) (*User, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
+	defer cancel()
+
+	query := `
+        SELECT id, email, first_name, last_name, password, user_active, is_admin
+        FROM users
+        WHERE id = ?`
+
+	var user User
+	row := db.QueryRowContext(ctx, query, userID)
+
+	err := row.Scan(
+		&user.ID,
+		&user.Email,
+		&user.FirstName,
+		&user.LastName,
+		&user.Password,
+		&user.UserActive,
+		&user.IsAdmin,
+	)
+
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
-	newID := int(lastInsertID)
+	return &user, nil
+}
 
-	return newID, nil
+// UpdateRefreshToken updates or inserts the refresh token for a user ID
+func UpdateRefreshToken(userID int, refreshToken string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
+	defer cancel()
+
+	// Check if the refresh token already exists for the user
+	var existingRefreshToken string
+	err := db.QueryRowContext(ctx, "SELECT refreshJWT FROM users WHERE id = ?", userID).Scan(&existingRefreshToken)
+
+	if err == sql.ErrNoRows {
+		// If no rows are found, insert the refresh token for the user
+		_, err := db.ExecContext(ctx, "UPDATE users SET refreshJWT = ? WHERE id = ?", refreshToken, userID)
+		return err
+	} else if err != nil {
+		return err
+	}
+
+	// If the refresh token already exists, update it
+	_, err = db.ExecContext(ctx, "UPDATE users SET refreshJWT = ? WHERE id = ?", refreshToken, userID)
+	return err
 }

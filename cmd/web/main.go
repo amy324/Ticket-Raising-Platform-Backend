@@ -1,7 +1,9 @@
+// main.go
+
 package main
 
 import (
-	//"database/sql"
+	"backend-project/data"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -10,8 +12,6 @@ import (
 	"os"
 	"strconv"
 	"time"
-
-	"backend-project/data"
 
 	"github.com/dgrijalva/jwt-go"
 	_ "github.com/go-sql-driver/mysql"
@@ -48,7 +48,6 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
-// LoginHandler
 func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	var credentials struct {
 		Email    string `json:"email"`
@@ -71,18 +70,10 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
 		return
 	}
-	// Generate access token with 30 minutes expiry
-	accessToken, err := generateJWT(user, os.Getenv("JWT_ACCESS_KEY"), 30*time.Minute)
+	// Insert the access token and update/insert the refresh token into the database
+	accessToken, refreshToken, err := generateTokens(user)
 	if err != nil {
-		fmt.Println("Error generating access JWT token:", err)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return
-	}
-
-	// Generate refresh token with 30 days expiry
-	refreshToken, err := generateJWT(user, os.Getenv("JWT_REFRESH_KEY"), 30*24*time.Hour)
-	if err != nil {
-		fmt.Println("Error generating refresh JWT token:", err)
+		fmt.Println("Error generating tokens:", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
@@ -95,7 +86,14 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Include both tokens in the response
+	// Update or insert the refresh token into the database
+	err = data.UpdateRefreshToken(user.ID, refreshToken)
+	if err != nil {
+		fmt.Println("Error updating refresh token:", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
 	response := map[string]interface{}{
 		"message":      "Login successful",
 		"user":         user,
@@ -106,11 +104,25 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 
-	// Log successful login
 	fmt.Printf("User %s successfully logged in\n", user.Email)
 }
 
-// Function to generate JWT token with expiration time
+func generateTokens(user *data.User) (string, string, error) {
+	// Generate access token with 30 minutes expiry
+	accessToken, err := generateJWT(user, os.Getenv("JWT_ACCESS_KEY"), 30*time.Minute)
+	if err != nil {
+		return "", "", err
+	}
+
+	// Generate refresh token with 30 days expiry
+	refreshToken, err := generateJWT(user, os.Getenv("JWT_REFRESH_KEY"), 30*24*time.Hour)
+	if err != nil {
+		return "", "", err
+	}
+
+	return accessToken, refreshToken, nil
+}
+
 func generateJWT(user *data.User, secretKey string, expirationTime time.Duration) (string, error) {
 	// Set the expiration time for the token
 	expiration := time.Now().Add(expirationTime)
@@ -144,6 +156,7 @@ func HelloWorldHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	fmt.Fprint(w, `{"message": "Hello, World!"}`)
 }
+
 func ProtectedHandler(w http.ResponseWriter, r *http.Request) {
 	log.Println("Executing ProtectedHandler")
 
@@ -159,8 +172,38 @@ func ProtectedHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 }
+func refreshAccessToken(w http.ResponseWriter, r *http.Request, refreshToken string, db *sql.DB) {
+    // Validate the refresh token and get the user information
+    user, err := validateRefreshJWT(refreshToken, os.Getenv("JWT_REFRESH_KEY"))
+    if err != nil {
+        http.Error(w, "Invalid refresh token", http.StatusUnauthorized)
+        return
+    }
+	
 
-// ...
+    // Generate a new access token
+    accessToken, err := generateJWT(user, os.Getenv("JWT_ACCESS_KEY"), 30*time.Minute)
+    if err != nil {
+        fmt.Println("Error generating access JWT token:", err)
+        http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+        return
+    }
+
+    // Update the access token in the database
+    err = updateAccessToken(db, dbTimeout, user.ID, accessToken)
+    if err != nil {
+        fmt.Println("Error updating access token:", err)
+        http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+        return
+    }
+
+    // Respond with the new access token
+    response := map[string]interface{}{"message": "Token refreshed successfully", "accessToken": accessToken}
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(response)
+}
+
+
 func LogoutHandler(w http.ResponseWriter, r *http.Request) {
 	// You can perform any additional cleanup or token invalidation here
 
@@ -169,6 +212,9 @@ func LogoutHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 }
+
+
+
 func main() {
 	// Initialize database connection
 	db, err := sql.Open("mysql", "root:password@tcp(127.0.0.1:3306)/backend_db")
@@ -200,7 +246,13 @@ func main() {
 	router.Handle("/protected", validateToken(http.HandlerFunc(ProtectedHandler))).Methods("GET")
 
 	// Logout endpoint (no authentication required)
-	router.HandleFunc("/logout", LogoutHandler).Methods("POST") // <-- Fix: Use LogoutHandler
+	router.HandleFunc("/logout", LogoutHandler).Methods("POST")
+
+	// Add a new endpoint for token refreshing
+	router.HandleFunc("/tokens/refresh", func(w http.ResponseWriter, r *http.Request) {
+		refreshAccessToken(w, r, r.Header.Get("Authorization"), db)
+	}).Methods("POST")
+	
 
 	// Hello, World! endpoint (no authentication required)
 	router.HandleFunc("/", HelloWorldHandler).Methods("GET")
