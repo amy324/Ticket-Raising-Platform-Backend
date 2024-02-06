@@ -72,7 +72,7 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Generate a pin number for verification
-	pinNumber, err := data.GeneratePinNumber() // Accessing GeneratePinNumber from the data package
+	pinNumber, err := data.GeneratePinNumber()
 	if err != nil {
 		log.Println("Error generating pin number:", err)
 		http.Error(w, "Error generating pin number", http.StatusInternalServerError)
@@ -90,22 +90,60 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Send the verification PIN to the user's email address
-	emailSubject := "Verification PIN"
-	emailBody := fmt.Sprintf("Your verification PIN is: %s", pinNumber)
-	recipientEmail := user.Email
-
-	// Send email
-	if err := sendEmail(recipientEmail, emailSubject, emailBody); err != nil {
-		log.Println("Error sending verification email:", err)
-		http.Error(w, "Error sending verification email", http.StatusInternalServerError)
+	// Retrieve the PIN from the database to ensure consistency
+	savedPin, err := data.GetPinByEmail(user.Email)
+	if err != nil {
+		log.Println("Error retrieving PIN from the database:", err)
+		http.Error(w, "Error retrieving PIN from the database", http.StatusInternalServerError)
 		return
 	}
 
-	// Log or print the pin number for verification (replace with actual email sending code)
-	log.Println("Verification code for user", user.Email+":", pinNumber)
+	// Send the PIN via email
+	subject := "Verification Code"
+	body := fmt.Sprintf("Verification code for user %s: %s", user.Email, savedPin)
+	err = sendPinByEmail(user.Email, subject, body)
+	if err != nil {
+		log.Println("Error sending PIN via email:", err)
+		http.Error(w, "Error sending PIN via email", http.StatusInternalServerError)
+		return
+	}
 
 	response := map[string]interface{}{"message": "User registered successfully", "userID": userID}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
+// VerifyPinHandler handles PIN verification
+func VerifyPinHandler(w http.ResponseWriter, r *http.Request) {
+	var pinVerification struct {
+		Email string `json:"email"`
+		Pin   string `json:"pin"`
+	}
+
+	err := json.NewDecoder(r.Body).Decode(&pinVerification)
+	if err != nil {
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
+	}
+
+	// Retrieve the PIN for the user by email
+	pin, err := data.GetPinByEmail(pinVerification.Email)
+	if err != nil {
+		http.Error(w, "User not found", http.StatusNotFound)
+		return
+	}
+
+	// Compare the provided PIN with the one retrieved from the database
+	if pin != pinVerification.Pin {
+		http.Error(w, "Invalid PIN", http.StatusUnauthorized)
+		return
+	}
+
+	// Activate the user account (update user_active status, send confirmation email, etc.)
+	// Implement the activation logic based on your requirements
+
+	// Respond with a success message
+	response := map[string]interface{}{"message": "PIN verified successfully"}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 }
@@ -336,6 +374,9 @@ func main() {
 
 	// Registration endpoint (no authentication required)
 	router.HandleFunc("/register", RegisterHandler).Methods("POST")
+
+	// VerifyP pin endpoint to the router
+	router.HandleFunc("/verify-pin", VerifyPinHandler).Methods("POST")
 
 	// Login endpoint (no authentication required)
 	router.HandleFunc("/login", LoginHandler).Methods("POST")

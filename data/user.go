@@ -345,3 +345,19 @@ func GetUserIDByAccessToken(accessToken string) (int, error) {
 
 	return userID, nil
 }
+// GetPinByEmail retrieves the PIN for a user by their email
+func GetPinByEmail(email string) (string, error) {
+    ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
+    defer cancel()
+
+    var pin string
+    query := `
+        SELECT pin_number FROM users WHERE email = ?`
+
+    err := db.QueryRowContext(ctx, query, email).Scan(&pin)
+    if err != nil {
+        return "", err
+    }
+
+    return pin, nil
+}

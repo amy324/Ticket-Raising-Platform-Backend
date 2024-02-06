@@ -8,31 +8,31 @@ import (
 )
 
 // sendEmail sends an email using the provided parameters
-func sendEmail(recipient, subject, body string) error {
-	// SMTP configuration
-	smtpHost := "localhost" // MailHog SMTP host
-	smtpPort := 1025        // MailHog SMTP port
+func sendPinByEmail(recipient, subject, body string) error {
+    // SMTP configuration
+    smtpHost := "localhost" // MailHog SMTP host
+    smtpPort := 1025        // MailHog SMTP port
 
-	// Sender and recipient
-	sender := "ticketplatform@email.com"
+    // Sender
+    sender := "ticketplatform@email.com"
 
-	// Compose the email message
-	m := gomail.NewMessage()
-	m.SetHeader("From", sender)
-	m.SetHeader("To", recipient)
-	m.SetHeader("Subject", subject)
-	m.SetBody("text/html", body)
+    // Compose the email message
+    m := gomail.NewMessage()
+    m.SetHeader("From", sender)
+    m.SetHeader("To", recipient)
+    m.SetHeader("Subject", subject)
+    m.SetBody("text/html", body)
 
-	// Send the email
-	d := gomail.NewDialer(smtpHost, smtpPort, "", "")
+    // Send the email
+    d := gomail.NewDialer(smtpHost, smtpPort, "", "")
 
-	// Uncomment the following line if  needed to authenticate with SMTP server
-	// d.TLSConfig = &tls.Config{InsecureSkipVerify: true}
+    // Uncomment the following line if needed to authenticate with SMTP server
+    // d.TLSConfig = &tls.Config{InsecureSkipVerify: true}
 
-	// Send the email
-	if err := d.DialAndSend(m); err != nil {
-		return err
-	}
+    // Send the email
+    if err := d.DialAndSend(m); err != nil {
+        return err
+    }
 
-	return nil
+    return nil
 }
