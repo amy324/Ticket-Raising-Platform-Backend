@@ -2,12 +2,15 @@ package data
 
 import (
 	"context"
+
 	"database/sql"
 	"errors"
 	"fmt"
 	"log"
 
-	//"math/rand"
+	"crypto/rand"
+	"math/big"
+
 	"os"
 	"strconv"
 	"time"
@@ -86,6 +89,12 @@ func (u *User) Create() (int, error) {
 		return 0, err
 	}
 
+	// Generate a random 6-digit pin number for verification
+	pinNumber, err := GeneratePinNumber()
+	if err != nil {
+		return 0, err
+	}
+
 	var newID int
 	stmt := `
     INSERT INTO users (email, first_name, last_name, password, pin_number, user_active, is_admin, refreshJWT)
@@ -96,10 +105,10 @@ func (u *User) Create() (int, error) {
 		u.FirstName,
 		u.LastName,
 		hashedPassword,
-		u.PinNumber,
+		pinNumber,
 		u.UserActive,
 		u.IsAdmin,
-		refreshJWT, // Ensure this is the last parameter
+		refreshJWT,
 	)
 
 	if err != nil {
@@ -172,6 +181,15 @@ func GetUserByEmail(email string) (*User, error) {
 	}
 
 	return &user, nil
+}
+
+func GeneratePinNumber() (string, error) {
+	// Generate a random 6-digit number
+	num, err := rand.Int(rand.Reader, big.NewInt(1000000))
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("%06d", num), nil
 }
 
 // PasswordMatches compares the provided password with the stored hash

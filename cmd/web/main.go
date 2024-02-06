@@ -61,6 +61,7 @@ func validateToken(next http.Handler) http.Handler {
 	})
 }
 
+// RegisterHandler handles user registration
 func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	var user data.User
 	err := json.NewDecoder(r.Body).Decode(&user)
@@ -70,6 +71,18 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Generate a pin number for verification
+	pinNumber, err := data.GeneratePinNumber() // Accessing GeneratePinNumber from the data package
+
+	if err != nil {
+		log.Println("Error generating pin number:", err)
+		http.Error(w, "Error generating pin number", http.StatusInternalServerError)
+		return
+	}
+
+	// Set the generated pin number for the user
+	user.PinNumber = pinNumber
+
 	// Create the user in the database
 	userID, err := user.Create()
 	if err != nil {
@@ -78,10 +91,15 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Log or print the pin number for verification (replace with actual email sending code)
+	log.Println("Verification code for user", user.Email+":", pinNumber)
+
 	response := map[string]interface{}{"message": "User registered successfully", "userID": userID}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 }
+
+
 
 func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	var credentials struct {
