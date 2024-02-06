@@ -4,6 +4,7 @@ package main
 
 import (
 	"backend-project/data"
+	//"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -11,6 +12,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
@@ -24,6 +26,39 @@ func init() {
 	if err := godotenv.Load(); err != nil {
 		log.Fatal("Error loading .env file")
 	}
+}
+
+func validateToken(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Extract the access token from the Authorization header
+		accessToken := r.Header.Get("Authorization")
+		if accessToken == "" {
+			http.Error(w, "Access token is required", http.StatusBadRequest)
+			return
+		}
+
+		// Check if the token starts with the "Bearer " prefix
+		if strings.HasPrefix(accessToken, "Bearer ") {
+			// Remove the "Bearer " prefix from the token
+			accessToken = strings.TrimPrefix(accessToken, "Bearer ")
+		}
+
+		// Log the received access token for debugging
+		fmt.Println("Received access token:", accessToken)
+
+		// Retrieve user ID from the access_tokens table using the access token
+		userID, err := data.GetUserIDByAccessToken(accessToken)
+		if err != nil {
+			http.Error(w, "Error retrieving user ID from access tokens table", http.StatusInternalServerError)
+			return
+		}
+
+		// Log the retrieved user ID for debugging
+		fmt.Println("Retrieved user ID from access tokens table:", userID)
+
+		// Call the next handler
+		next.ServeHTTP(w, r)
+	})
 }
 
 func RegisterHandler(w http.ResponseWriter, r *http.Request) {
@@ -160,60 +195,96 @@ func HelloWorldHandler(w http.ResponseWriter, r *http.Request) {
 func ProtectedHandler(w http.ResponseWriter, r *http.Request) {
 	log.Println("Executing ProtectedHandler")
 
-	// Extract user ID from the request context
-	userID, ok := r.Context().Value("userID").(int)
+	// Extract user information from the request context
+	user, ok := r.Context().Value("user").(*data.User)
 	if !ok {
-		http.Error(w, "Unable to retrieve user ID", http.StatusInternalServerError)
+		http.Error(w, "Unable to retrieve user information", http.StatusInternalServerError)
 		return
 	}
 
-	// You can now use the userID for further processing
-	response := map[string]interface{}{"message": "Protected endpoint", "userID": userID}
+	// You can now use the user information for further processing
+	response := map[string]interface{}{"message": "Protected endpoint", "user": user}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 }
+
 func refreshAccessToken(w http.ResponseWriter, r *http.Request, refreshToken string, db *sql.DB) {
-    // Validate the refresh token and get the user information
-    user, err := validateRefreshJWT(refreshToken, os.Getenv("JWT_REFRESH_KEY"))
-    if err != nil {
-        http.Error(w, "Invalid refresh token", http.StatusUnauthorized)
-        return
-    }
-	
+	// Validate the refresh token and get the user information
+	user, err := validateRefreshJWT(refreshToken, os.Getenv("JWT_REFRESH_KEY"))
+	if err != nil {
+		http.Error(w, "Invalid refresh token", http.StatusUnauthorized)
+		return
+	}
 
-    // Generate a new access token
-    accessToken, err := generateJWT(user, os.Getenv("JWT_ACCESS_KEY"), 30*time.Minute)
-    if err != nil {
-        fmt.Println("Error generating access JWT token:", err)
-        http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-        return
-    }
+	// Generate a new access token
+	accessToken, err := generateJWT(user, os.Getenv("JWT_ACCESS_KEY"), 30*time.Minute)
+	if err != nil {
+		fmt.Println("Error generating access JWT token:", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
 
-    // Update the access token in the database
-    err = updateAccessToken(db, dbTimeout, user.ID, accessToken)
-    if err != nil {
-        fmt.Println("Error updating access token:", err)
-        http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-        return
-    }
+	// Update the access token in the database
+	err = updateAccessToken(db, dbTimeout, user.ID, accessToken)
+	if err != nil {
+		fmt.Println("Error updating access token:", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
 
-    // Respond with the new access token
-    response := map[string]interface{}{"message": "Token refreshed successfully", "accessToken": accessToken}
-    w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(response)
+	// Respond with the new access token
+	response := map[string]interface{}{"message": "Token refreshed successfully", "accessToken": accessToken}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
 }
 
-
+// LogoutHandler for user logout
 func LogoutHandler(w http.ResponseWriter, r *http.Request) {
-	// You can perform any additional cleanup or token invalidation here
+	// Print the request URL and headers for debugging
+	fmt.Println("Request URL:", r.URL)
+	fmt.Println("Request Headers:", r.Header)
 
-	// Return a response without a token to simulate logout
+	// Extract the access token from the Authorization header
+	accessToken := r.Header.Get("Authorization")
+	if accessToken == "" {
+		fmt.Println("No access token provided")
+		http.Error(w, "Access token is required", http.StatusBadRequest)
+		return
+	}
+
+	// Remove the "Bearer " prefix from the token
+	accessToken = strings.TrimPrefix(accessToken, "Bearer ")
+
+	// Retrieve user ID from the database using the access token
+	userID, err := data.GetUserIDByAccessToken(accessToken)
+	if err != nil {
+		fmt.Println("Error retrieving user ID from access tokens table:", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	// Retrieve the user from the database based on the user ID
+	user, err := data.GetUserByID(userID)
+	if err != nil {
+		fmt.Println("Error retrieving user from the database:", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	fmt.Printf("User with ID %d is logging out\n", userID)
+
+	// Logout the user using the Logout method defined on the User struct
+	if err := user.Logout(); err != nil {
+		fmt.Println("Error logging out:", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	// Respond with a success message
 	response := map[string]interface{}{"message": "Logout successful"}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 }
-
-
 
 func main() {
 	// Initialize database connection
@@ -245,14 +316,16 @@ func main() {
 	// Protected endpoint (requires authentication)
 	router.Handle("/protected", validateToken(http.HandlerFunc(ProtectedHandler))).Methods("GET")
 
-	// Logout endpoint (no authentication required)
-	router.HandleFunc("/logout", LogoutHandler).Methods("POST")
+	// Logout endpoint (requires authentication)
+	router.Handle("/logout", validateToken(http.HandlerFunc(LogoutHandler))).Methods("POST")
+
+	// Debugging message to ensure /logout endpoint registration
+	fmt.Println("Logout endpoint registered successfully.")
 
 	// Add a new endpoint for token refreshing
 	router.HandleFunc("/tokens/refresh", func(w http.ResponseWriter, r *http.Request) {
 		refreshAccessToken(w, r, r.Header.Get("Authorization"), db)
 	}).Methods("POST")
-	
 
 	// Hello, World! endpoint (no authentication required)
 	router.HandleFunc("/", HelloWorldHandler).Methods("GET")

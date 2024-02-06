@@ -220,7 +220,7 @@ func CreateAccessToken(userID int, userEmail string, accessToken string) (int64,
 
 	if err == sql.ErrNoRows {
 		// If no rows are found, insert the access token for the user
-		result, err := db.ExecContext(ctx, "INSERT INTO access_tokens (user_id, user_email, accessJWT) VALUES (?, ?, ?)", userID, userEmail, accessToken)
+		result, err := db.ExecContext(ctx, "INSERT INTO access_tokens (user_id, email, accessJWT) VALUES (?, ?, ?)", userID, userEmail, accessToken)
 		if err != nil {
 			return 0, err
 		}
@@ -290,4 +290,40 @@ func UpdateRefreshToken(userID int, refreshToken string) error {
 	// If the refresh token already exists, update it
 	_, err = db.ExecContext(ctx, "UPDATE users SET refreshJWT = ? WHERE id = ?", refreshToken, userID)
 	return err
+}
+
+func (u *User) Logout() error {
+	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
+	defer cancel()
+
+	// Delete the access token entry in the access_tokens table
+	_, err := db.ExecContext(ctx, "DELETE FROM access_tokens WHERE user_id = ?", u.ID)
+	if err != nil {
+		return err
+	}
+
+	// Set the refreshJWT to an empty string in the users table
+	_, err = db.ExecContext(ctx, "UPDATE users SET refreshJWT = '' WHERE id = ?", u.ID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// GetUserIDByAccessToken retrieves the user ID associated with the given access token
+func GetUserIDByAccessToken(accessToken string) (int, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
+	defer cancel()
+
+	var userID int
+	query := `
+        SELECT user_id FROM access_tokens WHERE accessJWT = ?`
+
+	err := db.QueryRowContext(ctx, query, accessToken).Scan(&userID)
+	if err != nil {
+		return 0, err
+	}
+
+	return userID, nil
 }

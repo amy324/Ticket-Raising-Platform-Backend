@@ -8,23 +8,14 @@ services:
       - "3306:3306"  # Expose MySQL port if necessary
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}  # Set your desired root password
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}  
       MYSQL_DATABASE: ${MYSQL_DB}
       # MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     volumes:
-      #type: bind
-        source: ./db-data/mysql/
-        #target: /var/lib/mysql
+        - /db-data/mysql
 
-  #  start Redis, and ensure that data is stored to a mounted volume
-  redis:
-    image: 'redis:alpine'
-    ports:
-      - "6379:6379"
-    restart: always
-    volumes:
-      - ./db-data/redis/:/data
+
 
   #  start mailhog
   mailhog:
