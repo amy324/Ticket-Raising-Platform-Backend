@@ -73,7 +73,6 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Generate a pin number for verification
 	pinNumber, err := data.GeneratePinNumber() // Accessing GeneratePinNumber from the data package
-
 	if err != nil {
 		log.Println("Error generating pin number:", err)
 		http.Error(w, "Error generating pin number", http.StatusInternalServerError)
@@ -91,6 +90,18 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Send the verification PIN to the user's email address
+	emailSubject := "Verification PIN"
+	emailBody := fmt.Sprintf("Your verification PIN is: %s", pinNumber)
+	recipientEmail := user.Email
+
+	// Send email
+	if err := sendEmail(recipientEmail, emailSubject, emailBody); err != nil {
+		log.Println("Error sending verification email:", err)
+		http.Error(w, "Error sending verification email", http.StatusInternalServerError)
+		return
+	}
+
 	// Log or print the pin number for verification (replace with actual email sending code)
 	log.Println("Verification code for user", user.Email+":", pinNumber)
 
@@ -98,8 +109,6 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 }
-
-
 
 func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	var credentials struct {
