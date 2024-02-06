@@ -48,6 +48,7 @@ func InitializeDB(user, password, host, port, dbname string) error {
 
 	return nil
 }
+var ErrUserNotFound = errors.New("user not found")
 
 // User structure
 type User struct {
@@ -345,19 +346,64 @@ func GetUserIDByAccessToken(accessToken string) (int, error) {
 
 	return userID, nil
 }
+
 // GetPinByEmail retrieves the PIN for a user by their email
 func GetPinByEmail(email string) (string, error) {
-    ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
-    defer cancel()
+	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
+	defer cancel()
 
-    var pin string
-    query := `
+	var pin string
+	query := `
         SELECT pin_number FROM users WHERE email = ?`
 
-    err := db.QueryRowContext(ctx, query, email).Scan(&pin)
+	err := db.QueryRowContext(ctx, query, email).Scan(&pin)
+	if err != nil {
+		return "", err
+	}
+
+	return pin, nil
+}
+
+// UserExists checks if a user already exists in the database by email
+func UserExists(email string) (bool, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
+	defer cancel()
+
+	var count int
+	query := `
+        SELECT COUNT(*) FROM users WHERE email = ?`
+
+	err := db.QueryRowContext(ctx, query, email).Scan(&count)
+	if err != nil {
+		return false, err
+	}
+
+	return count > 0, nil
+}
+
+// ActivateAccount activates the user account by setting UserActive to 1
+func (u *User) ActivateAccount() error {
+	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
+	defer cancel()
+
+	// Update the user's isActive status to 1
+	_, err := db.ExecContext(ctx, "UPDATE users SET user_active = 1 WHERE id = ?", u.ID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+// UpdatePinAfterVerification updates the pin_number field after PIN verification
+func (u *User) UpdatePinAfterVerification() error {
+    // Prepare the SQL statement to update the pin_number field
+    query := "UPDATE users SET pin_number = ? WHERE id = ?"
+
+    // Execute the SQL statement
+    _, err := db.Exec(query, "N/A - verified", u.ID)
     if err != nil {
-        return "", err
+        return err
     }
 
-    return pin, nil
+    return nil
 }

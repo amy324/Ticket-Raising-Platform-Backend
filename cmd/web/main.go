@@ -4,6 +4,8 @@ package main
 
 import (
 	"backend-project/data"
+	"errors"
+
 	//"context"
 	"database/sql"
 	"encoding/json"
@@ -71,6 +73,18 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Check if the user already exists
+	exists, err := data.UserExists(user.Email)
+	if err != nil {
+		log.Println("Error checking user existence:", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+	if exists {
+		http.Error(w, "User already exists", http.StatusConflict)
+		return
+	}
+
 	// Generate a pin number for verification
 	pinNumber, err := data.GeneratePinNumber()
 	if err != nil {
@@ -126,21 +140,32 @@ func VerifyPinHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Retrieve the PIN for the user by email
-	pin, err := data.GetPinByEmail(pinVerification.Email)
+	// Retrieve the user by email
+	user, err := data.GetUserByEmail(pinVerification.Email)
 	if err != nil {
 		http.Error(w, "User not found", http.StatusNotFound)
 		return
 	}
 
+	// Retrieve the PIN for the user from the database
+	savedPin, err := data.GetPinByEmail(pinVerification.Email)
+	if err != nil {
+		http.Error(w, "Error retrieving PIN from the database", http.StatusInternalServerError)
+		return
+	}
+
 	// Compare the provided PIN with the one retrieved from the database
-	if pin != pinVerification.Pin {
+	if savedPin != pinVerification.Pin {
 		http.Error(w, "Invalid PIN", http.StatusUnauthorized)
 		return
 	}
 
-	// Activate the user account (update user_active status, send confirmation email, etc.)
-	// Implement the activation logic based on your requirements
+	// Update the pin_number field to indicate verification
+	user.PinNumber = "N/A - verified" // Set the new value for pin_number
+	if err := user.UpdatePinAfterVerification(); err != nil {
+		http.Error(w, "Error updating PIN after verification", http.StatusInternalServerError)
+		return
+	}
 
 	// Respond with a success message
 	response := map[string]interface{}{"message": "PIN verified successfully"}
@@ -166,10 +191,25 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	// Authenticate the user
 	user, err := data.AuthenticateUser(credentials.Email, credentials.Password)
 	if err != nil {
-		fmt.Println("Error authenticating user:", err)
-		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
+		if errors.Is(err, data.ErrUserNotFound) {
+			// If the user is not found, return a specific response
+			http.Error(w, "User does not exist or has not been activated. Please try re-registering your account", http.StatusNotFound)
+			return
+		} else {
+			// For other authentication errors, return generic unauthorized response
+			fmt.Println("Error authenticating user:", err)
+			http.Error(w, "Invalid credentials", http.StatusUnauthorized)
+			return
+		}
+	}
+
+	// Check if the user is active
+	if user.UserActive != 1 {
+		// If the user is not active, return a specific response
+		http.Error(w, "User does not exist or has not been activated. Please try re-registering your account", http.StatusForbidden)
 		return
 	}
+
 	// Insert the access token and update/insert the refresh token into the database
 	accessToken, refreshToken, err := generateTokens(user)
 	if err != nil {
