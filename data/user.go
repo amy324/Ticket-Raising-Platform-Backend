@@ -48,6 +48,7 @@ func InitializeDB(user, password, host, port, dbname string) error {
 
 	return nil
 }
+
 var ErrUserNotFound = errors.New("user not found")
 
 // User structure
@@ -228,18 +229,20 @@ func AuthenticateUser(email, password string) (*User, error) {
 	return user, nil
 }
 
-// CreateAccessToken function
 func CreateAccessToken(userID int, userEmail string, accessToken string) (int64, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
 	defer cancel()
+
+	// Calculate the expiration time (30 minutes from creation)
+	expirationTime := time.Now().Add(30 * time.Minute)
 
 	// Check if the access token already exists for the user
 	var existingAccessToken string
 	err := db.QueryRowContext(ctx, "SELECT accessJWT FROM access_tokens WHERE user_id = ?", userID).Scan(&existingAccessToken)
 
 	if err == sql.ErrNoRows {
-		// If no rows are found, insert the access token for the user
-		result, err := db.ExecContext(ctx, "INSERT INTO access_tokens (user_id, email, accessJWT) VALUES (?, ?, ?)", userID, userEmail, accessToken)
+		// If no rows are found, insert the access token for the user with expiration time
+		result, err := db.ExecContext(ctx, "INSERT INTO access_tokens (user_id, email, accessJWT, created_at, expires_at) VALUES (?, ?, ?, NOW(), ?)", userID, userEmail, accessToken, expirationTime)
 		if err != nil {
 			return 0, err
 		}
@@ -250,7 +253,7 @@ func CreateAccessToken(userID int, userEmail string, accessToken string) (int64,
 	}
 
 	// If the access token already exists, update it
-	_, err = db.ExecContext(ctx, "UPDATE access_tokens SET accessJWT = ? WHERE user_id = ?", accessToken, userID)
+	_, err = db.ExecContext(ctx, "UPDATE access_tokens SET accessJWT = ?, created_at = NOW(), expires_at = ? WHERE user_id = ?", accessToken, expirationTime, userID)
 	if err != nil {
 		return 0, err
 	}
@@ -258,6 +261,7 @@ func CreateAccessToken(userID int, userEmail string, accessToken string) (int64,
 	// Return a dummy LastInsertId, as it's not relevant for updates
 	return 0, nil
 }
+
 
 // GetUserByID retrieves a user by ID
 func GetUserByID(userID int) (*User, error) {
@@ -394,16 +398,67 @@ func (u *User) ActivateAccount() error {
 
 	return nil
 }
-// UpdatePinAfterVerification updates the pin_number field after PIN verification
-func (u *User) UpdatePinAfterVerification() error {
-    // Prepare the SQL statement to update the pin_number field
-    query := "UPDATE users SET pin_number = ? WHERE id = ?"
 
-    // Execute the SQL statement
-    _, err := db.Exec(query, "N/A - verified", u.ID)
+// UpdatePinAfterVerification updates the pin_number field after PIN verification
+// and activates the user account
+func (u *User) UpdatePinAfterVerification() error {
+	// Prepare the SQL statement to update the pin_number and user_active fields
+	query := "UPDATE users SET pin_number = ?, user_active = 1 WHERE id = ?"
+
+	// Execute the SQL statement
+	result, err := db.Exec(query, "N/A - verified", u.ID)
+	if err != nil {
+		return fmt.Errorf("error updating user data: %v", err)
+	}
+
+	// Check the number of rows affected by the update
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("error getting rows affected: %v", err)
+	}
+
+	if rowsAffected == 0 {
+		return errors.New("no rows affected, user not found or pin update failed")
+	}
+
+	return nil
+}
+
+// GetAccessTokenExpirationTime retrieves the expiration time of the access token for the given user ID.
+func GetAccessTokenExpirationTime(userID int) (time.Time, error) {
+    ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
+    defer cancel()
+
+    var expiresAt time.Time
+    err := db.QueryRowContext(ctx, "SELECT expires_at FROM access_tokens WHERE user_id = ?", userID).Scan(&expiresAt)
     if err != nil {
-        return err
+        if err == sql.ErrNoRows {
+            // Return a zero time if no access token found for the user
+            return time.Time{}, nil
+        }
+        return time.Time{}, err
     }
 
-    return nil
+    return expiresAt.UTC(), nil // Ensure expiration time is in UTC
 }
+
+// GetUserEmailByAccessToken retrieves the email associated with the provided access token.
+func GetUserEmailByAccessToken(accessToken string) (string, error) {
+    ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
+    defer cancel()
+
+    var userEmail string
+    err := db.QueryRowContext(ctx, "SELECT email FROM access_tokens WHERE accessJWT = ?", accessToken).Scan(&userEmail)
+    if err != nil {
+        if err == sql.ErrNoRows {
+            // Return an empty string if no email found for the access token
+            return "", nil
+        }
+        return "", err
+    }
+
+    return userEmail, nil
+}
+
+
+

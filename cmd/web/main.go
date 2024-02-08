@@ -48,19 +48,42 @@ func validateToken(next http.Handler) http.Handler {
 		// Log the received access token for debugging
 		fmt.Println("Received access token:", accessToken)
 
-		// Retrieve user ID from the access_tokens table using the access token
-		userID, err := data.GetUserIDByAccessToken(accessToken)
-		if err != nil {
-			http.Error(w, "Error retrieving user ID from access tokens table", http.StatusInternalServerError)
+		// Validate the access token expiration
+		if isTokenExpired(accessToken) {
+			http.Error(w, "Access token has expired", http.StatusUnauthorized)
 			return
 		}
-
-		// Log the retrieved user ID for debugging
-		fmt.Println("Retrieved user ID from access tokens table:", userID)
 
 		// Call the next handler
 		next.ServeHTTP(w, r)
 	})
+}
+func isTokenExpired(accessToken string) bool {
+	// Get user ID associated with the access token
+	userID, err := data.GetUserIDByAccessToken(accessToken)
+	if err != nil {
+		fmt.Println("Error fetching user ID from access token:", err)
+		return true // Consider expired if unable to fetch user ID
+	}
+
+	// Get expiration time from the database
+	expirationTime, err := data.GetAccessTokenExpirationTime(userID)
+	if err != nil {
+		fmt.Println("Error fetching token expiration time:", err)
+		return true // Consider expired if unable to fetch expiration time
+	}
+
+	fmt.Println("Expiration time from database:", expirationTime)
+
+	// Check if the current time is after the expiration time
+	currentTime := time.Now()
+	fmt.Println("Current time:", currentTime)
+	if currentTime.After(expirationTime) {
+		fmt.Println("Access token has expired")
+		return true
+	}
+
+	return false
 }
 
 // RegisterHandler handles user registration
@@ -391,9 +414,62 @@ func LogoutHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
+func ProfileHandler(w http.ResponseWriter, r *http.Request) {
+	// Log the start of the handler
+	log.Println("Fetching user profile...")
+
+	// Extract the access token from the Authorization header
+	accessToken := r.Header.Get("Authorization")
+	if accessToken == "" {
+		http.Error(w, "Access token is required", http.StatusBadRequest)
+		return
+	}
+
+	// Check if the token starts with the "Bearer " prefix
+	if strings.HasPrefix(accessToken, "Bearer ") {
+		// Remove the "Bearer " prefix from the token
+		accessToken = strings.TrimPrefix(accessToken, "Bearer ")
+	}
+
+	// Check if the access token is expired
+	if isTokenExpired(accessToken) {
+		http.Error(w, "Access token has expired", http.StatusUnauthorized)
+		return
+	}
+
+	// Extract the email associated with the access token
+	email, err := data.GetUserEmailByAccessToken(accessToken)
+	if err != nil {
+		log.Println("Error retrieving user email from access token:", err)
+		http.Error(w, "Error retrieving user email", http.StatusInternalServerError)
+		return
+	}
+
+	// Retrieve the user profile from the database using the email
+	user, err := data.GetUserByEmail(email)
+	if err != nil {
+		log.Println("Error retrieving user profile:", err)
+		http.Error(w, "Error retrieving user profile", http.StatusInternalServerError)
+		return
+	}
+
+	if user == nil {
+		log.Println("User profile not found")
+		http.Error(w, "User profile not found", http.StatusNotFound)
+		return
+	}
+
+	// Log the retrieved user profile
+	log.Println("Retrieved user profile:", user)
+
+	// Respond with the user profile
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(user)
+}
+
 func main() {
 	// Initialize database connection
-	db, err := sql.Open("mysql", "root:password@tcp(127.0.0.1:3306)/backend_db")
+	db, err := sql.Open("mysql", "root:password@tcp(127.0.0.1:3306)/backend_db?parseTime=true")
 	if err != nil {
 		log.Fatal("Error connecting to the database:", err)
 	}
@@ -429,6 +505,9 @@ func main() {
 
 	// Debugging message to ensure /logout endpoint registration
 	fmt.Println("Logout endpoint registered successfully.")
+
+	//Profile endpoint gets users profile
+	router.Handle("/profile", validateToken(http.HandlerFunc(ProfileHandler))).Methods("GET")
 
 	// Add a new endpoint for token refreshing
 	router.HandleFunc("/tokens/refresh", func(w http.ResponseWriter, r *http.Request) {
