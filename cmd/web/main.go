@@ -509,6 +509,13 @@ func main() {
 	//Profile endpoint gets users profile
 	router.Handle("/profile", validateToken(http.HandlerFunc(ProfileHandler))).Methods("GET")
 
+	// Define the routes for ticket operations
+	router.HandleFunc("/tickets", CreateTicketHandler).Methods("POST")
+	router.HandleFunc("/tickets/{ticketID}/conversation", AddConversationHandler).Methods("POST")
+	router.HandleFunc("/tickets", GetTicketsHandler).Methods("GET")
+	router.HandleFunc("/tickets/{ticketID}", GetTicketByIDHandler).Methods("GET")
+	router.HandleFunc("/tickets/{ticketID}", CloseTicketHandler).Methods("PUT")
+
 	// Add a new endpoint for token refreshing
 	router.HandleFunc("/tokens/refresh", func(w http.ResponseWriter, r *http.Request) {
 		refreshAccessToken(w, r, r.Header.Get("Authorization"), db)

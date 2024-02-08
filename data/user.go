@@ -262,7 +262,6 @@ func CreateAccessToken(userID int, userEmail string, accessToken string) (int64,
 	return 0, nil
 }
 
-
 // GetUserByID retrieves a user by ID
 func GetUserByID(userID int) (*User, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
@@ -340,13 +339,23 @@ func GetUserIDByAccessToken(accessToken string) (int, error) {
 	defer cancel()
 
 	var userID int
-	query := `
-        SELECT user_id FROM access_tokens WHERE accessJWT = ?`
+	query := `SELECT user_id FROM access_tokens WHERE accessJWT = ?`
 
+	// Log the query being executed
+	log.Printf("Executing query to retrieve user ID for access token: %s", accessToken)
+
+	// Execute the query and scan the result
 	err := db.QueryRowContext(ctx, query, accessToken).Scan(&userID)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			// Return 0 if no rows are found
+			return 0, nil
+		}
 		return 0, err
 	}
+
+	// Log the retrieved user ID
+	log.Printf("Retrieved user ID from database: %d", userID)
 
 	return userID, nil
 }
@@ -426,32 +435,49 @@ func (u *User) UpdatePinAfterVerification() error {
 
 // GetAccessTokenExpirationTime retrieves the expiration time of the access token for the given user ID.
 func GetAccessTokenExpirationTime(userID int) (time.Time, error) {
-    ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
-    defer cancel()
+	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
+	defer cancel()
 
-    var expiresAt time.Time
-    err := db.QueryRowContext(ctx, "SELECT expires_at FROM access_tokens WHERE user_id = ?", userID).Scan(&expiresAt)
-    if err != nil {
-        if err == sql.ErrNoRows {
-            // Return a zero time if no access token found for the user
-            return time.Time{}, nil
-        }
-        return time.Time{}, err
-    }
+	var expiresAt time.Time
+	err := db.QueryRowContext(ctx, "SELECT expires_at FROM access_tokens WHERE user_id = ?", userID).Scan(&expiresAt)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			// Return a zero time if no access token found for the user
+			return time.Time{}, nil
+		}
+		return time.Time{}, err
+	}
 
-    return expiresAt.UTC(), nil // Ensure expiration time is in UTC
+	return expiresAt.UTC(), nil // Ensure expiration time is in UTC
 }
 
 // GetUserEmailByAccessToken retrieves the email associated with the provided access token.
 func GetUserEmailByAccessToken(accessToken string) (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
+	defer cancel()
+
+	var userEmail string
+	err := db.QueryRowContext(ctx, "SELECT email FROM access_tokens WHERE accessJWT = ?", accessToken).Scan(&userEmail)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			// Return an empty string if no email found for the access token
+			return "", nil
+		}
+		return "", err
+	}
+
+	return userEmail, nil
+}
+// GetUserEmailByID retrieves the email associated with the provided user ID.
+func GetUserEmailByID(userID int) (string, error) {
     ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
     defer cancel()
 
     var userEmail string
-    err := db.QueryRowContext(ctx, "SELECT email FROM access_tokens WHERE accessJWT = ?", accessToken).Scan(&userEmail)
+    err := db.QueryRowContext(ctx, "SELECT email FROM users WHERE id = ?", userID).Scan(&userEmail)
     if err != nil {
         if err == sql.ErrNoRows {
-            // Return an empty string if no email found for the access token
+            // Return an empty string if no email found for the user ID
             return "", nil
         }
         return "", err
@@ -459,6 +485,3 @@ func GetUserEmailByAccessToken(accessToken string) (string, error) {
 
     return userEmail, nil
 }
-
-
-
