@@ -253,41 +253,44 @@ func GetTicketByIDHandler(w http.ResponseWriter, r *http.Request) {
 
 // CloseTicketHandler handles requests to close a ticket.
 func CloseTicketHandler(w http.ResponseWriter, r *http.Request) {
-	// Log the start of the handler
-	log.Println("Closing ticket...")
+    // Log the start of the handler
+    log.Println("Closing ticket...")
 
-	// Extract the access token from the Authorization header
-	accessToken := r.Header.Get("Authorization")
-	if accessToken == "" {
-		http.Error(w, "Access token is required", http.StatusBadRequest)
-		return
-	}
+    // Extract the access token from the Authorization header
+    accessToken := r.Header.Get("Authorization")
+    if accessToken == "" {
+        http.Error(w, "Access token is required", http.StatusBadRequest)
+        return
+    }
 
-	// Check if the token starts with the "Bearer " prefix
-	if strings.HasPrefix(accessToken, "Bearer ") {
-		// Remove the "Bearer " prefix from the token
-		accessToken = strings.TrimPrefix(accessToken, "Bearer ")
-	}
+    // Check if the token starts with the "Bearer " prefix
+    if strings.HasPrefix(accessToken, "Bearer ") {
+        // Remove the "Bearer " prefix from the token
+        accessToken = strings.TrimPrefix(accessToken, "Bearer ")
+    }
 
-	// Check if the access token is expired
-	if isTokenExpired(accessToken) {
-		http.Error(w, "Access token has expired", http.StatusUnauthorized)
-		return
-	}
-	// Extract ticketID from request URL
-	params := mux.Vars(r)
-	ticketID, err := strconv.ParseInt(params["ticketID"], 10, 64)
-	if err != nil {
-		http.Error(w, "Invalid ticket ID", http.StatusBadRequest)
-		return
-	}
+    // Check if the access token is expired
+    if isTokenExpired(accessToken) {
+        http.Error(w, "Access token has expired", http.StatusUnauthorized)
+        return
+    }
 
-	// Close ticket
-	err = data.CloseTicket(ticketID)
-	if err != nil {
-		http.Error(w, "Failed to close ticket", http.StatusInternalServerError)
-		return
-	}
+    // Extract ticketID from the request URL
+    params := mux.Vars(r)
+    ticketID, err := strconv.ParseInt(params["ticketID"], 10, 64)
+    if err != nil {
+        http.Error(w, "Invalid ticket ID", http.StatusBadRequest)
+        return
+    }
 
-	w.WriteHeader(http.StatusOK)
+    // Delete ticket and associated conversations from the database
+    if err := data.CloseTicket(ticketID); err != nil {
+        log.Printf("Failed to close ticket: %v", err)
+        http.Error(w, "Failed to close ticket", http.StatusInternalServerError)
+        return
+    }
+
+    // Respond with success message
+    w.WriteHeader(http.StatusOK)
+    fmt.Fprintf(w, "Ticket %d closed successfully", ticketID)
 }

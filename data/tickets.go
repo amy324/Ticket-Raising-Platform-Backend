@@ -185,11 +185,31 @@ func GetConversationsByTicketID(ticketID int64) ([]Conversation, error) {
 
 // CloseTicket closes a ticket by updating its status to "closed".
 func CloseTicket(ticketID int64) error {
-	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
-	defer cancel()
+	// Start a transaction
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
 
-	_, err := db.ExecContext(ctx, "UPDATE tickets SET status = ? WHERE id = ?", "closed", ticketID)
-	return err
+	// Delete conversations associated with the ticket
+	_, err = tx.Exec("DELETE FROM conversations WHERE ticketId = ?", ticketID)
+	if err != nil {
+		return err
+	}
+
+	// Delete the ticket
+	_, err = tx.Exec("DELETE FROM tickets WHERE _id = ?", ticketID)
+	if err != nil {
+		return err
+	}
+
+	// Commit the transaction
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // GetUserIDByAccessTokenInt64 retrieves the user ID associated with the given access token as int64.
