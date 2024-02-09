@@ -189,6 +189,7 @@ func GetTicketsHandler(w http.ResponseWriter, r *http.Request) {
 
 
 // GetTicketByIDHandler handles requests to retrieve a specific ticket by its ID along with its conversations.
+// GetTicketByIDHandler handles requests to retrieve a specific ticket by its ID along with its conversations.
 func GetTicketByIDHandler(w http.ResponseWriter, r *http.Request) {
     // Log the start of the handler
     log.Println("Getting ticket by ID...")
@@ -212,6 +213,13 @@ func GetTicketByIDHandler(w http.ResponseWriter, r *http.Request) {
         return
     }
 
+    // Extract userID from the access token
+    userID, err := data.GetUserIDByAccessTokenInt64(accessToken)
+    if err != nil {
+        http.Error(w, "Failed to retrieve user ID from access token", http.StatusInternalServerError)
+        return
+    }
+
     // Extract ticketID from request URL
     params := mux.Vars(r)
     ticketID, err := strconv.ParseInt(params["ticketID"], 10, 64)
@@ -224,6 +232,12 @@ func GetTicketByIDHandler(w http.ResponseWriter, r *http.Request) {
     ticket, err := data.GetTicketByID(ticketID)
     if err != nil {
         http.Error(w, "Failed to retrieve ticket", http.StatusInternalServerError)
+        return
+    }
+
+    // Check if the ticket belongs to the authenticated user
+    if ticket.UserID != userID {
+        http.Error(w, "Unauthorized: You do not have a  ticket with this ID", http.StatusForbidden)
         return
     }
 
@@ -250,6 +264,7 @@ func GetTicketByIDHandler(w http.ResponseWriter, r *http.Request) {
     w.Header().Set("Content-Type", "application/json")
     json.NewEncoder(w).Encode(ticketWithConversations)
 }
+
 
 // CloseTicketHandler handles requests to close a ticket.
 func CloseTicketHandler(w http.ResponseWriter, r *http.Request) {

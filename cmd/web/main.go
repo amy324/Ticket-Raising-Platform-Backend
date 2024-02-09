@@ -503,9 +503,6 @@ func main() {
 	// Logout endpoint (requires authentication)
 	router.Handle("/logout", validateToken(http.HandlerFunc(LogoutHandler))).Methods("POST")
 
-	// Debugging message to ensure /logout endpoint registration
-	fmt.Println("Logout endpoint registered successfully.")
-
 	//Profile endpoint gets users profile
 	router.Handle("/profile", validateToken(http.HandlerFunc(ProfileHandler))).Methods("GET")
 
