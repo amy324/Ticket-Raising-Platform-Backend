@@ -54,8 +54,7 @@ func CreateTicketHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Create ticket
-	// Create ticket
-ticketID, err := data.CreateTicket(userID, ticketData.Subject, ticketData.Issue)
+	ticketID, err := data.CreateTicket(userID, ticketData.Subject, ticketData.Issue)
 
 	if err != nil {
 		log.Println("Error creating ticket:", err)
@@ -117,44 +116,53 @@ func AddConversationHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusCreated)
 }
-
-// GetTicketsHandler handles requests to retrieve all tickets for a user.
+// GetTicketsHandler retrieves tickets for the user associated with the access token.
 func GetTicketsHandler(w http.ResponseWriter, r *http.Request) {
-	// Log the start of the handler
-	log.Println("Getting all tickets...")
+    // Log the start of the handler
+    log.Println("Getting all tickets...")
 
-	// Extract the access token from the Authorization header
-	accessToken := r.Header.Get("Authorization")
-	if accessToken == "" {
-		http.Error(w, "Access token is required", http.StatusBadRequest)
-		return
-	}
+    // Extract the access token from the Authorization header
+    accessToken := r.Header.Get("Authorization")
+    if accessToken == "" {
+        http.Error(w, "Access token is required", http.StatusBadRequest)
+        return
+    }
 
-	// Check if the token starts with the "Bearer " prefix
-	if strings.HasPrefix(accessToken, "Bearer ") {
-		// Remove the "Bearer " prefix from the token
-		accessToken = strings.TrimPrefix(accessToken, "Bearer ")
-	}
+    // Check if the token starts with the "Bearer " prefix
+    if strings.HasPrefix(accessToken, "Bearer ") {
+        // Remove the "Bearer " prefix from the token
+        accessToken = strings.TrimPrefix(accessToken, "Bearer ")
+    }
 
-	// Check if the access token is expired
-	if isTokenExpired(accessToken) {
-		http.Error(w, "Access token has expired", http.StatusUnauthorized)
-		return
-	}
-	// Extract userID from the request context
-	userID := r.Context().Value("userID").(int64)
+    // Check if the access token is expired
+    if isTokenExpired(accessToken) {
+        http.Error(w, "Access token has expired", http.StatusUnauthorized)
+        return
+    }
 
-	// Get tickets for user
-	tickets, err := data.GetTicketsByUserID(userID)
-	if err != nil {
-		http.Error(w, "Failed to retrieve tickets", http.StatusInternalServerError)
-		return
-	}
+    // Get user ID as int64
+    userID, err := data.GetUserIDByAccessTokenInt64(accessToken)
+    if err != nil {
+        log.Printf("Failed to retrieve user ID: %v", err)
+        http.Error(w, "Failed to retrieve user ID", http.StatusInternalServerError)
+        return
+    }
 
-	// Respond with tickets
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(tickets)
+    // Get tickets for user
+    tickets, err := data.GetTicketsByUserID(userID)
+    if err != nil {
+        log.Printf("Failed to retrieve tickets: %v", err)
+        http.Error(w, "Failed to retrieve tickets", http.StatusInternalServerError)
+        return
+    }
+
+    // Respond with tickets
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(tickets)
 }
+
+
+
 
 // GetTicketByIDHandler handles requests to retrieve a specific ticket by its ID.
 func GetTicketByIDHandler(w http.ResponseWriter, r *http.Request) {

@@ -2,6 +2,7 @@ package data
 
 import (
 	"context"
+	"database/sql"
 	"log"
 
 	//"database/sql"
@@ -10,8 +11,8 @@ import (
 
 // Ticket represents the structure of a ticket.
 type Ticket struct {
-	ID         int       `json:"id"`
-	UserID     int       `json:"userId"`
+	ID         int64     `json:"id"`
+	UserID     int64     `json:"userId"`
 	Email      string    `json:"email"`
 	Subject    string    `json:"subject"`
 	Issue      string    `json:"issue"`
@@ -21,8 +22,8 @@ type Ticket struct {
 
 // Conversation represents a message within a ticket conversation.
 type Conversation struct {
-	ID            int       `json:"id"`
-	TicketID      int       `json:"ticketId"`
+	ID            int64     `json:"id"`
+	TicketID      int64     `json:"ticketId"`
 	Sender        string    `json:"sender"`
 	Message       string    `json:"message"`
 	MessageSentAt time.Time `json:"messageSentAt"`
@@ -115,7 +116,7 @@ func GetTicketsByUserID(userID int64) ([]Ticket, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
 	defer cancel()
 
-	rows, err := db.QueryContext(ctx, "SELECT * FROM tickets WHERE user_id = ?", userID)
+	rows, err := db.QueryContext(ctx, "SELECT _id, userId, email, subject, issue, status, dateOpened FROM tickets WHERE userId = ?", userID)
 	if err != nil {
 		return nil, err
 	}
@@ -124,7 +125,7 @@ func GetTicketsByUserID(userID int64) ([]Ticket, error) {
 	var tickets []Ticket
 	for rows.Next() {
 		var ticket Ticket
-		err := rows.Scan(&ticket.ID, &ticket.UserID, &ticket.Email, &ticket.Subject, &ticket.Status, &ticket.DateOpened)
+		err := rows.Scan(&ticket.ID, &ticket.UserID, &ticket.Email, &ticket.Subject, &ticket.Issue, &ticket.Status, &ticket.DateOpened)
 		if err != nil {
 			return nil, err
 		}
@@ -137,19 +138,37 @@ func GetTicketsByUserID(userID int64) ([]Ticket, error) {
 	return tickets, nil
 }
 
-// GetTicketByID retrieves a ticket by its ID.
-func GetTicketByID(ticketID int64) (Ticket, error) {
+// GetTicketsByUserID retrieves all tickets for a given user ID.
+func GetTicketByID(userID int64) ([]Ticket, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
 	defer cancel()
 
-	var ticket Ticket
-	err := db.QueryRowContext(ctx, "SELECT * FROM tickets WHERE id = ?", ticketID).
-		Scan(&ticket.ID, &ticket.UserID, &ticket.Email, &ticket.Subject, &ticket.Status, &ticket.DateOpened)
+	rows, err := db.QueryContext(ctx, "SELECT * FROM tickets WHERE userId = ?", userID)
 	if err != nil {
-		return Ticket{}, err
+		// Log the error
+		log.Printf("Error querying tickets by user ID: %v", err)
+		return nil, err
+	}
+	defer rows.Close()
+
+	var tickets []Ticket
+	for rows.Next() {
+		var ticket Ticket
+		err := rows.Scan(&ticket.ID, &ticket.UserID, &ticket.Email, &ticket.Subject, &ticket.Issue, &ticket.Status, &ticket.DateOpened)
+		if err != nil {
+			// Log the error
+			log.Printf("Error scanning ticket row: %v", err)
+			return nil, err
+		}
+		tickets = append(tickets, ticket)
+	}
+	if err := rows.Err(); err != nil {
+		// Log the error
+		log.Printf("Error iterating over ticket rows: %v", err)
+		return nil, err
 	}
 
-	return ticket, nil
+	return tickets, nil
 }
 
 // CloseTicket closes a ticket by updating its status to "closed".
@@ -159,4 +178,31 @@ func CloseTicket(ticketID int64) error {
 
 	_, err := db.ExecContext(ctx, "UPDATE tickets SET status = ? WHERE id = ?", "closed", ticketID)
 	return err
+}
+
+// GetUserIDByAccessTokenInt64 retrieves the user ID associated with the given access token as int64.
+func GetUserIDByAccessTokenInt64(accessToken string) (int64, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
+	defer cancel()
+
+	var userID int64
+	query := `SELECT user_id FROM access_tokens WHERE accessJWT = ?`
+
+	// Log the query being executed
+	log.Printf("Executing query to retrieve user ID for access token: %s", accessToken)
+
+	// Execute the query and scan the result
+	err := db.QueryRowContext(ctx, query, accessToken).Scan(&userID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			// Return 0 if no rows are found
+			return 0, nil
+		}
+		return 0, err
+	}
+
+	// Log the retrieved user ID
+	log.Printf("Retrieved user ID from database: %d", userID)
+
+	return userID, nil
 }
