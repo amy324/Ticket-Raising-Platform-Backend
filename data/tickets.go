@@ -238,3 +238,16 @@ func GetUserIDByAccessTokenInt64(accessToken string) (int64, error) {
 
 	return userID, nil
 }
+
+// GetUserIDByTicketID retrieves the user ID associated with a ticket from the database.
+func GetUserIDByTicketID(ticketID int64) (int64, error) {
+	var userID int64
+	query := "SELECT userId FROM tickets WHERE _id = ?"
+
+	err := db.QueryRow(query, ticketID).Scan(&userID)
+	if err != nil {
+		return 0, err
+	}
+
+	return userID, nil
+}

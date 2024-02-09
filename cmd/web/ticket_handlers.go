@@ -144,168 +144,193 @@ func AddConversationHandler(w http.ResponseWriter, r *http.Request) {
 
 // GetTicketsHandler retrieves tickets for the user associated with the access token.
 func GetTicketsHandler(w http.ResponseWriter, r *http.Request) {
-    // Log the start of the handler
-    log.Println("Getting all tickets...")
+	// Log the start of the handler
+	log.Println("Getting all tickets...")
 
-    // Extract the access token from the Authorization header
-    accessToken := r.Header.Get("Authorization")
-    if accessToken == "" {
-        http.Error(w, "Access token is required", http.StatusBadRequest)
-        return
-    }
+	// Extract the access token from the Authorization header
+	accessToken := r.Header.Get("Authorization")
+	if accessToken == "" {
+		http.Error(w, "Access token is required", http.StatusBadRequest)
+		return
+	}
 
-    // Check if the token starts with the "Bearer " prefix
-    if strings.HasPrefix(accessToken, "Bearer ") {
-        // Remove the "Bearer " prefix from the token
-        accessToken = strings.TrimPrefix(accessToken, "Bearer ")
-    }
+	// Check if the token starts with the "Bearer " prefix
+	if strings.HasPrefix(accessToken, "Bearer ") {
+		// Remove the "Bearer " prefix from the token
+		accessToken = strings.TrimPrefix(accessToken, "Bearer ")
+	}
 
-    // Check if the access token is expired
-    if isTokenExpired(accessToken) {
-        http.Error(w, "Access token has expired", http.StatusUnauthorized)
-        return
-    }
+	// Check if the access token is expired
+	if isTokenExpired(accessToken) {
+		http.Error(w, "Access token has expired", http.StatusUnauthorized)
+		return
+	}
 
-    // Get user ID as int64
-    userID, err := data.GetUserIDByAccessTokenInt64(accessToken)
-    if err != nil {
-        log.Printf("Failed to retrieve user ID: %v", err)
-        http.Error(w, "Failed to retrieve user ID", http.StatusInternalServerError)
-        return
-    }
+	// Get user ID as int64
+	userID, err := data.GetUserIDByAccessTokenInt64(accessToken)
+	if err != nil {
+		log.Printf("Failed to retrieve user ID: %v", err)
+		http.Error(w, "Failed to retrieve user ID", http.StatusInternalServerError)
+		return
+	}
 
-    // Get tickets for user
-    tickets, err := data.GetTicketsByUserID(userID)
-    if err != nil {
-        log.Printf("Failed to retrieve tickets: %v", err)
-        http.Error(w, "Failed to retrieve tickets", http.StatusInternalServerError)
-        return
-    }
+	// Get tickets for user
+	tickets, err := data.GetTicketsByUserID(userID)
+	if err != nil {
+		log.Printf("Failed to retrieve tickets: %v", err)
+		http.Error(w, "Failed to retrieve tickets", http.StatusInternalServerError)
+		return
+	}
 
-    // Respond with tickets
-    w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(tickets)
+	// Respond with tickets
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(tickets)
 }
-
 
 // GetTicketByIDHandler handles requests to retrieve a specific ticket by its ID along with its conversations.
 // GetTicketByIDHandler handles requests to retrieve a specific ticket by its ID along with its conversations.
 func GetTicketByIDHandler(w http.ResponseWriter, r *http.Request) {
-    // Log the start of the handler
-    log.Println("Getting ticket by ID...")
+	// Log the start of the handler
+	log.Println("Getting ticket by ID...")
 
-    // Extract the access token from the Authorization header
-    accessToken := r.Header.Get("Authorization")
-    if accessToken == "" {
-        http.Error(w, "Access token is required", http.StatusBadRequest)
-        return
-    }
+	// Extract the access token from the Authorization header
+	accessToken := r.Header.Get("Authorization")
+	if accessToken == "" {
+		http.Error(w, "Access token is required", http.StatusBadRequest)
+		return
+	}
 
-    // Check if the token starts with the "Bearer " prefix
-    if strings.HasPrefix(accessToken, "Bearer ") {
-        // Remove the "Bearer " prefix from the token
-        accessToken = strings.TrimPrefix(accessToken, "Bearer ")
-    }
+	// Check if the token starts with the "Bearer " prefix
+	if strings.HasPrefix(accessToken, "Bearer ") {
+		// Remove the "Bearer " prefix from the token
+		accessToken = strings.TrimPrefix(accessToken, "Bearer ")
+	}
 
-    // Check if the access token is expired
-    if isTokenExpired(accessToken) {
-        http.Error(w, "Access token has expired", http.StatusUnauthorized)
-        return
-    }
+	// Check if the access token is expired
+	if isTokenExpired(accessToken) {
+		http.Error(w, "Access token has expired", http.StatusUnauthorized)
+		return
+	}
 
-    // Extract userID from the access token
-    userID, err := data.GetUserIDByAccessTokenInt64(accessToken)
-    if err != nil {
-        http.Error(w, "Failed to retrieve user ID from access token", http.StatusInternalServerError)
-        return
-    }
+	// Extract userID from the access token
+	userID, err := data.GetUserIDByAccessTokenInt64(accessToken)
+	if err != nil {
+		http.Error(w, "Failed to retrieve user ID from access token", http.StatusInternalServerError)
+		return
+	}
 
-    // Extract ticketID from request URL
-    params := mux.Vars(r)
-    ticketID, err := strconv.ParseInt(params["ticketID"], 10, 64)
-    if err != nil {
-        http.Error(w, "Invalid ticket ID", http.StatusBadRequest)
-        return
-    }
+	// Extract ticketID from request URL
+	params := mux.Vars(r)
+	ticketID, err := strconv.ParseInt(params["ticketID"], 10, 64)
+	if err != nil {
+		http.Error(w, "Invalid ticket ID", http.StatusBadRequest)
+		return
+	}
 
-    // Get ticket details by ID
-    ticket, err := data.GetTicketByID(ticketID)
-    if err != nil {
-        http.Error(w, "Failed to retrieve ticket", http.StatusInternalServerError)
-        return
-    }
+	// Get ticket details by ID
+	ticket, err := data.GetTicketByID(ticketID)
+	if err != nil {
+		http.Error(w, "Failed to retrieve ticket", http.StatusInternalServerError)
+		return
+	}
 
-    // Check if the ticket belongs to the authenticated user
-    if ticket.UserID != userID {
-        http.Error(w, "Unauthorized: You do not have a  ticket with this ID", http.StatusForbidden)
-        return
-    }
+	// Check if the ticket belongs to the authenticated user
+	if ticket.UserID != userID {
+		http.Error(w, "No ticket associated with this ID", http.StatusForbidden)
+		return
+	}
 
-    // Get conversations for the ticket
-    conversations, err := data.GetConversationsByTicketID(ticketID)
-    if err != nil {
-        http.Error(w, "Failed to retrieve conversations", http.StatusInternalServerError)
-        return
-    }
+	// Get conversations for the ticket
+	conversations, err := data.GetConversationsByTicketID(ticketID)
+	if err != nil {
+		http.Error(w, "Failed to retrieve conversations", http.StatusInternalServerError)
+		return
+	}
 
-    // Combine ticket and conversations into a struct
-    type TicketWithConversations struct {
-        Ticket        data.Ticket        `json:"ticket"`
-        Conversations []data.Conversation `json:"conversations"`
-    }
+	// Combine ticket and conversations into a struct
+	type TicketWithConversations struct {
+		Ticket        data.Ticket         `json:"ticket"`
+		Conversations []data.Conversation `json:"conversations"`
+	}
 
-    // Create the combined data
-    ticketWithConversations := TicketWithConversations{
-        Ticket:        ticket,
-        Conversations: conversations,
-    }
+	// Create the combined data
+	ticketWithConversations := TicketWithConversations{
+		Ticket:        ticket,
+		Conversations: conversations,
+	}
 
-    // Respond with combined data
-    w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(ticketWithConversations)
+	// Respond with combined data
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(ticketWithConversations)
 }
-
 
 // CloseTicketHandler handles requests to close a ticket.
 func CloseTicketHandler(w http.ResponseWriter, r *http.Request) {
-    // Log the start of the handler
-    log.Println("Closing ticket...")
+	// Log the start of the handler
+	log.Println("Closing ticket...")
 
-    // Extract the access token from the Authorization header
-    accessToken := r.Header.Get("Authorization")
-    if accessToken == "" {
-        http.Error(w, "Access token is required", http.StatusBadRequest)
-        return
-    }
+	// Extract the access token from the Authorization header
+	accessToken := r.Header.Get("Authorization")
+	if accessToken == "" {
+		http.Error(w, "Access token is required", http.StatusBadRequest)
+		return
+	}
 
-    // Check if the token starts with the "Bearer " prefix
-    if strings.HasPrefix(accessToken, "Bearer ") {
-        // Remove the "Bearer " prefix from the token
-        accessToken = strings.TrimPrefix(accessToken, "Bearer ")
-    }
+	// Check if the token starts with the "Bearer " prefix
+	if strings.HasPrefix(accessToken, "Bearer ") {
+		// Remove the "Bearer " prefix from the token
+		accessToken = strings.TrimPrefix(accessToken, "Bearer ")
+	}
 
-    // Check if the access token is expired
-    if isTokenExpired(accessToken) {
-        http.Error(w, "Access token has expired", http.StatusUnauthorized)
-        return
-    }
+	// Check if the access token is expired
+	if isTokenExpired(accessToken) {
+		http.Error(w, "Access token has expired", http.StatusUnauthorized)
+		return
+	}
 
-    // Extract ticketID from the request URL
-    params := mux.Vars(r)
-    ticketID, err := strconv.ParseInt(params["ticketID"], 10, 64)
-    if err != nil {
-        http.Error(w, "Invalid ticket ID", http.StatusBadRequest)
-        return
-    }
+	// Extract userID from the access token
+	userID, err := data.GetUserIDByAccessTokenInt64(accessToken)
+	if err != nil {
+		http.Error(w, "Failed to retrieve user ID from access token", http.StatusInternalServerError)
+		return
+	}
 
-    // Delete ticket and associated conversations from the database
-    if err := data.CloseTicket(ticketID); err != nil {
-        log.Printf("Failed to close ticket: %v", err)
-        http.Error(w, "Failed to close ticket", http.StatusInternalServerError)
-        return
-    }
+	// Extract ticketID from the request URL
+	params := mux.Vars(r)
+	ticketID, err := strconv.ParseInt(params["ticketID"], 10, 64)
+	if err != nil {
+		http.Error(w, "Invalid ticket ID", http.StatusBadRequest)
+		return
+	}
 
-    // Respond with success message
-    w.WriteHeader(http.StatusOK)
-    fmt.Fprintf(w, "Ticket %d closed successfully", ticketID)
+	// Check if the ticket belongs to the authenticated user
+	if !isTicketOwnedByUser(ticketID, userID) {
+		http.Error(w, "No ticket associated with this ID", http.StatusForbidden)
+		return
+	}
+
+	// Delete ticket and associated conversations from the database
+	if err := data.CloseTicket(ticketID); err != nil {
+		log.Printf("Failed to close ticket: %v", err)
+		http.Error(w, "Failed to close ticket", http.StatusInternalServerError)
+		return
+	}
+
+	// Respond with success message
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintf(w, "Ticket %d closed successfully", ticketID)
+}
+
+// isTicketOwnedByUser checks if the ticket with the given ID belongs to the specified user.
+func isTicketOwnedByUser(ticketID int64, userID int64) bool {
+	// Retrieve the user ID associated with the ticket
+	ticketUserID, err := data.GetUserIDByTicketID(ticketID)
+	if err != nil {
+		// Handle the error (e.g., log it) and return false
+		log.Println("Error retrieving user ID for ticket:", err)
+		return false
+	}
+
+	// Compare the retrieved user ID with the specified userID
+	return ticketUserID == userID
 }
