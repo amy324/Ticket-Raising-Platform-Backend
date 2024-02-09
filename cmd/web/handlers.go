@@ -48,7 +48,8 @@ func RefreshTokenHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Update the access token in the database
-	err = updateAccessToken(db, dbTimeout, user.ID, accessToken)
+	// Update the access token and its expiration time in the database
+	err = updateAccessToken(db, dbTimeout, user.ID, accessToken, 30*time.Minute)
 	if err != nil {
 		fmt.Println("Error updating access token:", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -90,16 +91,19 @@ func validateRefreshJWT(tokenString, secretKey string) (*data.User, error) {
 	return user, nil
 }
 
-// Function to update the access token in the database
-func updateAccessToken(db *sql.DB, timeout time.Duration, userID int, newAccessToken string) error {
+// Function to update the access token and its expiration time in the database
+func updateAccessToken(db *sql.DB, timeout time.Duration, userID int, newAccessToken string, validityDuration time.Duration) error {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
+	// Calculate the new expiration time
+	expiresAt := time.Now().Add(validityDuration)
+
 	stmt := `
         UPDATE access_tokens
-        SET accessJWT = ?
+        SET accessJWT = ?, expires_at = ?
         WHERE user_id = ?`
 
-	_, err := db.ExecContext(ctx, stmt, newAccessToken, userID)
+	_, err := db.ExecContext(ctx, stmt, newAccessToken, expiresAt, userID)
 	return err
 }

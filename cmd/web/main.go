@@ -337,34 +337,35 @@ func ProtectedHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func refreshAccessToken(w http.ResponseWriter, r *http.Request, refreshToken string, db *sql.DB) {
-	// Validate the refresh token and get the user information
-	user, err := validateRefreshJWT(refreshToken, os.Getenv("JWT_REFRESH_KEY"))
-	if err != nil {
-		http.Error(w, "Invalid refresh token", http.StatusUnauthorized)
-		return
-	}
+    // Validate the refresh token and get the user information
+    user, err := validateRefreshJWT(refreshToken, os.Getenv("JWT_REFRESH_KEY"))
+    if err != nil {
+        http.Error(w, "Invalid refresh token", http.StatusUnauthorized)
+        return
+    }
 
-	// Generate a new access token
-	accessToken, err := generateJWT(user, os.Getenv("JWT_ACCESS_KEY"), 30*time.Minute)
-	if err != nil {
-		fmt.Println("Error generating access JWT token:", err)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return
-	}
+    // Generate a new access token
+    accessToken, err := generateJWT(user, os.Getenv("JWT_ACCESS_KEY"), 30*time.Minute)
+    if err != nil {
+        fmt.Println("Error generating access JWT token:", err)
+        http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+        return
+    }
 
-	// Update the access token in the database
-	err = updateAccessToken(db, dbTimeout, user.ID, accessToken)
-	if err != nil {
-		fmt.Println("Error updating access token:", err)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return
-	}
+    // Update the access token in the database
+    err = updateAccessToken(db, dbTimeout, user.ID, accessToken, 30*time.Minute) 
+    if err != nil {
+        fmt.Println("Error updating access token:", err)
+        http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+        return
+    }
 
-	// Respond with the new access token
-	response := map[string]interface{}{"message": "Token refreshed successfully", "accessToken": accessToken}
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
+    // Respond with the new access token
+    response := map[string]interface{}{"message": "Token refreshed successfully", "accessToken": accessToken}
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(response)
 }
+
 
 // LogoutHandler for user logout
 func LogoutHandler(w http.ResponseWriter, r *http.Request) {
