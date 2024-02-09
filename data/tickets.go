@@ -102,7 +102,7 @@ func AddConversation(ticketID int64, sender, message string) (int64, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
 	defer cancel()
 
-	result, err := db.ExecContext(ctx, "INSERT INTO ticket_conversations (ticketId, sender, message, message_sent_at) VALUES (?, ?, ?, ?)",
+	result, err := db.ExecContext(ctx, "INSERT INTO conversations (ticketId, sender, message, messageSentAt) VALUES (?, ?, ?, ?)",
 		ticketID, sender, message, time.Now())
 	if err != nil {
 		return 0, err

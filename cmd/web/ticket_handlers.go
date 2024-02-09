@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"strconv"
@@ -66,11 +67,9 @@ func CreateTicketHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(struct{ TicketID int }{TicketID: ticketID})
 }
-
-// AddConversationHandler handles requests to add a conversation to a ticket.
 func AddConversationHandler(w http.ResponseWriter, r *http.Request) {
 	// Log the start of the handler
-	log.Println("Adding conversation..")
+	log.Println("Adding conversation...")
 
 	// Extract the access token from the Authorization header
 	accessToken := r.Header.Get("Authorization")
@@ -90,7 +89,30 @@ func AddConversationHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Access token has expired", http.StatusUnauthorized)
 		return
 	}
-	// Extract ticketID from request URL
+
+	// Extract the user's email from the access token
+	email, err := data.GetUserEmailByAccessToken(accessToken)
+	if err != nil {
+		log.Println("Error retrieving user email from access token:", err)
+		http.Error(w, "Error retrieving user email", http.StatusInternalServerError)
+		return
+	}
+
+	// Retrieve the user's first name from the database using the email
+	user, err := data.GetUserByEmail(email)
+	if err != nil {
+		log.Println("Error retrieving user profile:", err)
+		http.Error(w, "Error retrieving user profile", http.StatusInternalServerError)
+		return
+	}
+
+	if user == nil {
+		log.Println("User profile not found")
+		http.Error(w, "User profile not found", http.StatusNotFound)
+		return
+	}
+
+	// Extract the ticket ID from the request URL parameters
 	params := mux.Vars(r)
 	ticketID, err := strconv.ParseInt(params["ticketID"], 10, 64)
 	if err != nil {
@@ -98,7 +120,7 @@ func AddConversationHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Parse request body
+	// Parse the request body to get the conversation message
 	var conversation struct {
 		Message string `json:"message"`
 	}
@@ -107,15 +129,19 @@ func AddConversationHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Add conversation to ticket
-	_, err = data.AddConversation(ticketID, "user", conversation.Message)
+	// Add the conversation to the database with the user's first name as the sender
+	_, err = data.AddConversation(ticketID, user.FirstName, conversation.Message)
 	if err != nil {
+		log.Println("Failed to add conversation to ticket:", err)
 		http.Error(w, "Failed to add conversation to ticket", http.StatusInternalServerError)
 		return
 	}
 
+	// Respond with a success message
 	w.WriteHeader(http.StatusCreated)
+	fmt.Fprintf(w, "Message successfully sent")
 }
+
 // GetTicketsHandler retrieves tickets for the user associated with the access token.
 func GetTicketsHandler(w http.ResponseWriter, r *http.Request) {
     // Log the start of the handler
@@ -162,9 +188,6 @@ func GetTicketsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 
-
-
-// GetTicketByIDHandler handles requests to retrieve a specific ticket by its ID.
 // GetTicketByIDHandler handles requests to retrieve a specific ticket by its ID along with its conversations.
 func GetTicketByIDHandler(w http.ResponseWriter, r *http.Request) {
     // Log the start of the handler
