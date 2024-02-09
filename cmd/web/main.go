@@ -513,7 +513,7 @@ func main() {
 	router.HandleFunc("/tickets", CreateTicketHandler).Methods("POST")
 	router.HandleFunc("/tickets/{ticketID}/conversation", AddConversationHandler).Methods("POST")
 	router.HandleFunc("/tickets", GetTicketsHandler).Methods("GET")
-	//router.HandleFunc("/tickets/{ticketID}", GetTicketByIDHandler).Methods("GET")
+	router.HandleFunc("/tickets/{ticketID}", GetTicketByIDHandler).Methods("GET")
 	router.HandleFunc("/tickets/{ticketID}", CloseTicketHandler).Methods("PUT")
 
 	// Add a new endpoint for token refreshing

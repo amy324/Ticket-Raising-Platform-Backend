@@ -165,46 +165,67 @@ func GetTicketsHandler(w http.ResponseWriter, r *http.Request) {
 
 
 // GetTicketByIDHandler handles requests to retrieve a specific ticket by its ID.
+// GetTicketByIDHandler handles requests to retrieve a specific ticket by its ID along with its conversations.
 func GetTicketByIDHandler(w http.ResponseWriter, r *http.Request) {
-	// Log the start of the handler
-	log.Println("Getting ticket by id...")
+    // Log the start of the handler
+    log.Println("Getting ticket by ID...")
 
-	// Extract the access token from the Authorization header
-	accessToken := r.Header.Get("Authorization")
-	if accessToken == "" {
-		http.Error(w, "Access token is required", http.StatusBadRequest)
-		return
-	}
+    // Extract the access token from the Authorization header
+    accessToken := r.Header.Get("Authorization")
+    if accessToken == "" {
+        http.Error(w, "Access token is required", http.StatusBadRequest)
+        return
+    }
 
-	// Check if the token starts with the "Bearer " prefix
-	if strings.HasPrefix(accessToken, "Bearer ") {
-		// Remove the "Bearer " prefix from the token
-		accessToken = strings.TrimPrefix(accessToken, "Bearer ")
-	}
+    // Check if the token starts with the "Bearer " prefix
+    if strings.HasPrefix(accessToken, "Bearer ") {
+        // Remove the "Bearer " prefix from the token
+        accessToken = strings.TrimPrefix(accessToken, "Bearer ")
+    }
 
-	// Check if the access token is expired
-	if isTokenExpired(accessToken) {
-		http.Error(w, "Access token has expired", http.StatusUnauthorized)
-		return
-	}
-	// Extract ticketID from request URL
-	params := mux.Vars(r)
-	ticketID, err := strconv.ParseInt(params["ticketID"], 10, 64)
-	if err != nil {
-		http.Error(w, "Invalid ticket ID", http.StatusBadRequest)
-		return
-	}
+    // Check if the access token is expired
+    if isTokenExpired(accessToken) {
+        http.Error(w, "Access token has expired", http.StatusUnauthorized)
+        return
+    }
 
-	// Get ticket by ID
-	ticket, err := data.GetTicketByID(ticketID)
-	if err != nil {
-		http.Error(w, "Failed to retrieve ticket", http.StatusInternalServerError)
-		return
-	}
+    // Extract ticketID from request URL
+    params := mux.Vars(r)
+    ticketID, err := strconv.ParseInt(params["ticketID"], 10, 64)
+    if err != nil {
+        http.Error(w, "Invalid ticket ID", http.StatusBadRequest)
+        return
+    }
 
-	// Respond with ticket
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(ticket)
+    // Get ticket details by ID
+    ticket, err := data.GetTicketByID(ticketID)
+    if err != nil {
+        http.Error(w, "Failed to retrieve ticket", http.StatusInternalServerError)
+        return
+    }
+
+    // Get conversations for the ticket
+    conversations, err := data.GetConversationsByTicketID(ticketID)
+    if err != nil {
+        http.Error(w, "Failed to retrieve conversations", http.StatusInternalServerError)
+        return
+    }
+
+    // Combine ticket and conversations into a struct
+    type TicketWithConversations struct {
+        Ticket        data.Ticket        `json:"ticket"`
+        Conversations []data.Conversation `json:"conversations"`
+    }
+
+    // Create the combined data
+    ticketWithConversations := TicketWithConversations{
+        Ticket:        ticket,
+        Conversations: conversations,
+    }
+
+    // Respond with combined data
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(ticketWithConversations)
 }
 
 // CloseTicketHandler handles requests to close a ticket.

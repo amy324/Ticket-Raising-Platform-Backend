@@ -138,37 +138,49 @@ func GetTicketsByUserID(userID int64) ([]Ticket, error) {
 	return tickets, nil
 }
 
-// GetTicketsByUserID retrieves all tickets for a given user ID.
-func GetTicketByID(userID int64) ([]Ticket, error) {
+// GetTicketByID retrieves a ticket by its ID from the database.
+func GetTicketByID(ticketID int64) (Ticket, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
 	defer cancel()
 
-	rows, err := db.QueryContext(ctx, "SELECT * FROM tickets WHERE userId = ?", userID)
+	var ticket Ticket
+	err := db.QueryRowContext(ctx, "SELECT * FROM tickets WHERE _id = ?", ticketID).
+		Scan(&ticket.ID, &ticket.UserID, &ticket.Email, &ticket.Subject, &ticket.Issue, &ticket.Status, &ticket.DateOpened)
 	if err != nil {
-		// Log the error
-		log.Printf("Error querying tickets by user ID: %v", err)
+		return Ticket{}, err
+	}
+
+	return ticket, nil
+}
+
+// GetConversationsByTicketID retrieves all conversations associated with a ticket ID from the database.
+func GetConversationsByTicketID(ticketID int64) ([]Conversation, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
+	defer cancel()
+
+	rows, err := db.QueryContext(ctx, "SELECT * FROM conversations WHERE ticketId = ?", ticketID)
+	if err != nil {
+		log.Printf("Error retrieving conversations by ticket ID: %v", err)
 		return nil, err
 	}
 	defer rows.Close()
 
-	var tickets []Ticket
+	var conversations []Conversation
 	for rows.Next() {
-		var ticket Ticket
-		err := rows.Scan(&ticket.ID, &ticket.UserID, &ticket.Email, &ticket.Subject, &ticket.Issue, &ticket.Status, &ticket.DateOpened)
+		var conv Conversation
+		err := rows.Scan(&conv.ID, &conv.TicketID, &conv.Sender, &conv.Message, &conv.MessageSentAt)
 		if err != nil {
-			// Log the error
-			log.Printf("Error scanning ticket row: %v", err)
+			log.Printf("Error scanning conversation row: %v", err)
 			return nil, err
 		}
-		tickets = append(tickets, ticket)
+		conversations = append(conversations, conv)
 	}
 	if err := rows.Err(); err != nil {
-		// Log the error
-		log.Printf("Error iterating over ticket rows: %v", err)
+		log.Printf("Error iterating over conversation rows: %v", err)
 		return nil, err
 	}
 
-	return tickets, nil
+	return conversations, nil
 }
 
 // CloseTicket closes a ticket by updating its status to "closed".
