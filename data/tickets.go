@@ -5,29 +5,9 @@ import (
 	"database/sql"
 	"log"
 
-	//"database/sql"
 	"time"
 )
 
-// Ticket represents the structure of a ticket.
-type Ticket struct {
-	ID         int64     `json:"id"`
-	UserID     int64     `json:"userId"`
-	Email      string    `json:"email"`
-	Subject    string    `json:"subject"`
-	Issue      string    `json:"issue"`
-	Status     string    `json:"status"`
-	DateOpened time.Time `json:"dateOpened"`
-}
-
-// Conversation represents a message within a ticket conversation.
-type Conversation struct {
-	ID            int64     `json:"id"`
-	TicketID      int64     `json:"ticketId"`
-	Sender        string    `json:"sender"`
-	Message       string    `json:"message"`
-	MessageSentAt time.Time `json:"messageSentAt"`
-}
 
 // CreateTicket creates a new ticket in the database and returns its ID.
 func CreateTicket(userID int, subject, issue string) (int, error) {

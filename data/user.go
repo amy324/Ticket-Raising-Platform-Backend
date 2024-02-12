@@ -51,26 +51,6 @@ func InitializeDB(user, password, host, port, dbname string) error {
 
 var ErrUserNotFound = errors.New("user not found")
 
-// User structure
-type User struct {
-	ID         int
-	Email      string
-	FirstName  string
-	LastName   string
-	Password   string
-	PinNumber  string
-	UserActive int
-	IsAdmin    int
-	RefreshJWT string
-}
-
-// AccessToken structure
-type AccessToken struct {
-	ID        int
-	UserID    int
-	Email     string
-	AccessJWT string
-}
 
 func (u *User) Create() (int, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)

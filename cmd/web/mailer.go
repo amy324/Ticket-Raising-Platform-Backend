@@ -26,8 +26,6 @@ func sendPinByEmail(recipient, subject, body string) error {
     // Send the email
     d := gomail.NewDialer(smtpHost, smtpPort, "", "")
 
-    // Uncomment the following line if needed to authenticate with SMTP server
-    // d.TLSConfig = &tls.Config{InsecureSkipVerify: true}
 
     // Send the email
     if err := d.DialAndSend(m); err != nil {
