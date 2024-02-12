@@ -1,27 +1,25 @@
 version: '3'
-
+volumes:
+  data:
 services:
-  # Start MySQL, and ensure that data is stored to a mounted volume
-  mysql:
-    image: 'mysql:latest'  # You can specify a specific version if needed
-    ports:
-      - "3306:3306"  # Expose MySQL port if necessary
-    restart: always
+  db:
+    image: mariadb
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}  
-      MYSQL_DATABASE: ${MYSQL_DB}
-      # MYSQL_USER: ${MYSQL_USER}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: '${DB_ROOT_PASSWORD}'
+      MYSQL_DATABASE: '${DB_DATABASE}'
+      MYSQL_USER: '${DB_DATABASE}'
+      MYSQL_PASSWORD: '${DB_PASSWORD}'
     volumes:
-        - /db-data/mysql
+      - data:/var/lib/mysql
+    ports:
+      - "3306:3306"
 
 
 
-  #  start mailhog
+  # Start mailhog
   mailhog:
     image: 'mailhog/mailhog:latest'
     ports:
-      - "1025:1025"
-      - "8025:8025"
+      - "8026:1025"
+      - "8027:8025"
     restart: always
-

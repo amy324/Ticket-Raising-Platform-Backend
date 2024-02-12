@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
+	//"os"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gorilla/mux"
@@ -30,12 +30,12 @@ func HelloWorldHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	// Fetch database connection details from environment variables
-	dbUser := os.Getenv("MYSQL_USER")
-	dbPassword := os.Getenv("MYSQL_PASSWORD")
-	dbHost := os.Getenv("MYSQL_HOST")
-	dbPort := os.Getenv("MYSQL_PORT")
-	dbName := os.Getenv("MYSQL_DB")
+	// Hardcoded database connection details for testing
+	dbUser := "root"
+	dbPassword := "DB_password!"
+	dbHost := "127.0.0.1"
+	dbPort := "3306"
+	dbName := "ticketplatform_db"
 
 	// Construct data source name
 	dataSourceName := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true", dbUser, dbPassword, dbHost, dbPort, dbName)
@@ -56,6 +56,8 @@ func main() {
 
 	// Set the database connection in the data package
 	data.SetDB(db)
+
+
 
 	// Update your router initialization in the main function
 	router := mux.NewRouter()

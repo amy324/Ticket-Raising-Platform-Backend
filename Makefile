@@ -1,40 +1,39 @@
-include .env
+
 export
 
-
-DSN=host=localhost port=3306 user=${MYSQL_USER} password=${MYSQL_PASSWORD} dbname=${MYSQL_DB} sslmode=disable timezone=UTC connect_timeout=5
-BINARY_NAME=myapp.exe
-REDIS=127.0.0.1:6379
+DSN=host=${DB_HOST} port=${DB_PORT} user=root password=${DB_PASSWORD} dbname=${DB_DATABASE} sslmode=disable timezone=UTC connect_timeout=5
+BINARY_NAME=ticketplatform.exe
 
 ## build: builds all binaries
 build:
-	@go build -o ${BINARY_NAME} ./cmd/web
-	@echo back end built!
+	@ go build -o ${BINARY_NAME}
 
 run: build
 	@echo Starting...
-	@DSN=${DSN} REDIS=${REDIS} ./${BINARY_NAME} &
-	@echo back end started!
+	@export DSN=${DSN}; \
+	 ./${BINARY_NAME} &
+	@echo Backend started!
+
 
 clean:
 	@echo Cleaning...
-	@rm -f ${BINARY_NAME}
+	@rm -f cmd/web/${BINARY_NAME}
 	@go clean
 	@echo Cleaned!
-
+	
 start: build
 	@echo Starting...
-	@export DSN=${DSN} REDIS=${REDIS} && ./${BINARY_NAME} &
-	@echo back end started!
-
+	@export DSN=${DSN}; \
+	cd cmd/web && ./${BINARY_NAME} &
+	@echo Backend started!
 
 stop:
 	@echo "Stopping..."
-	@pkill -f ${BINARY_NAME}
-	@echo Stopped back end
+	@pkill -f cmd/web/${BINARY_NAME}
+	@echo Stopped backend
 
 restart: stop start
 
 test:
 	@echo "Testing..."
-	go test -v ./...
+	cd cmd/web && go test -v ./...
