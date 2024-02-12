@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gorilla/mux"
@@ -29,8 +30,18 @@ func HelloWorldHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	// Fetch database connection details from environment variables
+	dbUser := os.Getenv("MYSQL_USER")
+	dbPassword := os.Getenv("MYSQL_PASSWORD")
+	dbHost := os.Getenv("MYSQL_HOST")
+	dbPort := os.Getenv("MYSQL_PORT")
+	dbName := os.Getenv("MYSQL_DB")
+
+	// Construct data source name
+	dataSourceName := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true", dbUser, dbPassword, dbHost, dbPort, dbName)
+
 	// Initialize database connection
-	db, err := sql.Open("mysql", "root:password@tcp(127.0.0.1:3306)/backend_db?parseTime=true")
+	db, err := sql.Open("mysql", dataSourceName)
 	if err != nil {
 		log.Fatal("Error connecting to the database:", err)
 	}
@@ -76,7 +87,6 @@ func main() {
 	router.Handle("/admin/tickets", validateAdminAccess(http.HandlerFunc(ViewAllTicketsHandler))).Methods("GET")
 	router.Handle("/admin/tickets/{ticketID}", validateAdminAccess(http.HandlerFunc(AdminGetTicketByIDHandler))).Methods("GET")
 	router.Handle("/admin/tickets/{ticketID}/conversation", validateAdminAccess(http.HandlerFunc(AdminAddConversationHandler))).Methods("POST")
-
 
 	// Endpoint for token refreshing
 	router.HandleFunc("/tokens/refresh", func(w http.ResponseWriter, r *http.Request) {
