@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
@@ -20,13 +21,12 @@ func init() {
 	}
 }
 
-//helps to ensure server loads properly
+// helps to ensure server loads properly
 func HelloWorldHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 	fmt.Fprint(w, `{"message": "Hello, World!"}`)
 }
-
 
 func main() {
 	// Initialize database connection
@@ -58,21 +58,27 @@ func main() {
 	// Login endpoint (no authentication required)
 	router.HandleFunc("/login", LoginHandler).Methods("POST")
 
-
 	// Logout endpoint (requires authentication)
 	router.Handle("/logout", validateAccessToken(http.HandlerFunc(LogoutHandler))).Methods("POST")
 
 	//Profile endpoint gets users profile
 	router.Handle("/profile", validateAccessToken(http.HandlerFunc(ProfileHandler))).Methods("GET")
 
-	// Define the routes for ticket operations
+	// Routes for ticket operations
 	router.HandleFunc("/tickets", CreateTicketHandler).Methods("POST")
 	router.HandleFunc("/tickets/{ticketID}/conversation", AddConversationHandler).Methods("POST")
 	router.HandleFunc("/tickets", GetTicketsHandler).Methods("GET")
 	router.HandleFunc("/tickets/{ticketID}", GetTicketByIDHandler).Methods("GET")
 	router.HandleFunc("/tickets/{ticketID}", CloseTicketHandler).Methods("DELETE")
 
-	// Add a new endpoint for token refreshing
+	//Routes for admin use
+	// View all tickets (requires admin privilege)
+	router.Handle("/admin/tickets", validateAdminAccess(http.HandlerFunc(ViewAllTicketsHandler))).Methods("GET")
+	router.Handle("/admin/tickets/{ticketID}", validateAdminAccess(http.HandlerFunc(AdminGetTicketByIDHandler))).Methods("GET")
+	router.Handle("/admin/tickets/{ticketID}/conversation", validateAdminAccess(http.HandlerFunc(AdminAddConversationHandler))).Methods("POST")
+
+
+	// Endpoint for token refreshing
 	router.HandleFunc("/tokens/refresh", func(w http.ResponseWriter, r *http.Request) {
 		refreshAccessToken(w, r, r.Header.Get("Authorization"), db)
 	}).Methods("POST")

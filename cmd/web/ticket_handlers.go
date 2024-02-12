@@ -188,7 +188,6 @@ func GetTicketsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetTicketByIDHandler handles requests to retrieve a specific ticket by its ID along with its conversations.
-// GetTicketByIDHandler handles requests to retrieve a specific ticket by its ID along with its conversations.
 func GetTicketByIDHandler(w http.ResponseWriter, r *http.Request) {
 	// Log the start of the handler
 	log.Println("Getting ticket by ID...")
