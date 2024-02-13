@@ -11,67 +11,73 @@ import (
 )
 
 // RegisterHandler handles user registration
+// RegisterHandler handles user registration
 func RegisterHandler(w http.ResponseWriter, r *http.Request) {
-	var user data.User
-	err := json.NewDecoder(r.Body).Decode(&user)
-	if err != nil {
-		log.Println("Error decoding request payload:", err)
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
-		return
-	}
+    var user data.User
+    err := json.NewDecoder(r.Body).Decode(&user)
+    if err != nil {
+        log.Println("Error decoding request payload:", err)
+        http.Error(w, "Invalid request payload", http.StatusBadRequest)
+        return
+    }
 
-	// Check if the user already exists
-	exists, err := data.UserExists(user.Email)
-	if err != nil {
-		log.Println("Error checking user existence:", err)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return
-	}
-	if exists {
-		http.Error(w, "User already exists", http.StatusConflict)
-		return
-	}
+    // Check if the user already exists
+    exists, err := data.UserExists(user.Email)
+    if err != nil {
+        log.Println("Error checking user existence:", err)
+        http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+        return
+    }
+    if exists {
+        http.Error(w, "User already exists", http.StatusConflict)
+        return
+    }
 
-	// Generate a pin number for verification
-	pinNumber, err := data.GeneratePinNumber()
-	if err != nil {
-		log.Println("Error generating pin number:", err)
-		http.Error(w, "Error generating pin number", http.StatusInternalServerError)
-		return
-	}
+    // Generate a pin number for verification
+    pinNumber, err := data.GeneratePinNumber()
+    if err != nil {
+        log.Println("Error generating pin number:", err)
+        http.Error(w, "Error generating pin number", http.StatusInternalServerError)
+        return
+    }
 
-	// Set the generated pin number for the user
-	user.PinNumber = pinNumber
+    // Set the generated pin number for the user
+    user.PinNumber = pinNumber
 
-	// Create the user in the database
-	userID, err := user.Create()
-	if err != nil {
-		log.Println("Error creating user:", err)
-		http.Error(w, "Error creating user", http.StatusInternalServerError)
-		return
-	}
+    // Create the user in the database
+    userID, err := user.Create()
+    if err != nil {
+        log.Println("Error creating user:", err)
+        http.Error(w, "Error creating user", http.StatusInternalServerError)
+        return
+    }
 
-	// Retrieve the PIN from the database to ensure consistency
-	savedPin, err := data.GetPinByEmail(user.Email)
-	if err != nil {
-		log.Println("Error retrieving PIN from the database:", err)
-		http.Error(w, "Error retrieving PIN from the database", http.StatusInternalServerError)
-		return
-	}
+    // Retrieve the PIN from the database to ensure consistency
+    savedPin, err := data.GetPinByEmail(user.Email)
+    if err != nil {
+        log.Println("Error retrieving PIN from the database:", err)
+        http.Error(w, "Error retrieving PIN from the database", http.StatusInternalServerError)
+        return
+    }
 
-	// Send the PIN via email
-	subject := "Verification Code"
-	body := fmt.Sprintf("Verification code for user %s: %s", user.Email, savedPin)
-	err = sendPinByEmail(user.Email, subject, body)
-	if err != nil {
-		log.Println("Error sending PIN via email:", err)
-		http.Error(w, "Error sending PIN via email", http.StatusInternalServerError)
-		return
-	}
+    // Send the PIN via email
+    // subject := "Verification Code"
+    body := fmt.Sprintf("Verification code for user %s: %s", user.Email, savedPin)
+    err = sendPinByEmail(user.Email, body) // This line calls the sendPinByEmail function
+    if err != nil {
+        log.Println("Error sending PIN via email:", err)
+        http.Error(w, "Error sending PIN via email", http.StatusInternalServerError)
+        return
+    }
 
-	response := map[string]interface{}{"message": "User registered successfully", "userID": userID}
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
+    // Respond with success message and include the PIN in the response
+    response := map[string]interface{}{
+        "message": "User registered successfully",
+        "userID":  userID,
+        "pin":     savedPin, // Include the PIN in the response
+    }
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(response)
 }
 
 

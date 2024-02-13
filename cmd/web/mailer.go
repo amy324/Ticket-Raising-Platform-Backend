@@ -1,29 +1,47 @@
 package main
 
 import (
-	"github.com/go-gomail/gomail"
+	"log"
+	"net/smtp"
+	"os"
+	"strconv"
 )
 
-func sendPinByEmail(recipient, subject, body string) error {
-	// SMTP configuration
-	smtpHost := "localhost" // MailHog SMTP host
-	smtpPort := 8026        // MailHog SMTP port
+// sendPinByEmail sends a PIN code to the specified email address
+func sendPinByEmail(email, pin string) error {
+	// SMTP server configuration
+	smtpHost := os.Getenv("SMTP_HOST")
+	smtpPortStr := os.Getenv("SMTP_PORT")
+	username := os.Getenv("SMTP_USERNAME")
+	password := os.Getenv("SMTP_PASSWORD")
 
-	// Sender
-	sender := "ticketplatform@email.com"
-
-	// Compose the email message
-	m := gomail.NewMessage()
-	m.SetHeader("From", sender)
-	m.SetHeader("To", recipient)
-	m.SetHeader("Subject", subject)
-	m.SetBody("text/html", body)
-
-	// Send the email using SMTP
-	d := gomail.NewDialer(smtpHost, smtpPort, "", "")
-	if err := d.DialAndSend(m); err != nil {
+	// Convert smtpPort string to integer
+	smtpPort, err := strconv.Atoi(smtpPortStr)
+	if err != nil {
 		return err
 	}
 
+	// Authentication
+	auth := smtp.PlainAuth("", username, password, smtpHost)
+
+	// Sender and recipient
+	from := username // Using the same username as sender
+	to := []string{email}
+
+	// Email content
+	subject := "Your PIN Code"
+	body := "Your PIN code is: " + pin
+
+	// Constructing the email message
+	message := []byte("To: " + to[0] + "\r\n" +
+		"Subject: " + subject + "\r\n" +
+		"\r\n" + body + "\r\n")
+
+	// Sending the email
+	err = smtp.SendMail(smtpHost+":"+strconv.Itoa(smtpPort), auth, from, to, message)
+	if err != nil {
+		return err
+	}
+	log.Println("PIN code sent successfully to", email)
 	return nil
 }
