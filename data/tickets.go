@@ -96,7 +96,7 @@ func GetTicketsByUserID(userID int64) ([]Ticket, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
 	defer cancel()
 
-	rows, err := db.QueryContext(ctx, "SELECT _id, userId, email, subject, issue, status, dateOpened FROM tickets WHERE userId = ?", userID)
+	rows, err := db.QueryContext(ctx, "SELECT id, userId, email, subject, issue, status, dateOpened FROM tickets WHERE userId = ?", userID)
 	if err != nil {
 		return nil, err
 	}
@@ -124,7 +124,7 @@ func GetTicketByID(ticketID int64) (Ticket, error) {
 	defer cancel()
 
 	var ticket Ticket
-	err := db.QueryRowContext(ctx, "SELECT * FROM tickets WHERE _id = ?", ticketID).
+	err := db.QueryRowContext(ctx, "SELECT * FROM tickets WHERE id = ?", ticketID).
 		Scan(&ticket.ID, &ticket.UserID, &ticket.Email, &ticket.Subject, &ticket.Issue, &ticket.Status, &ticket.DateOpened)
 	if err != nil {
 		return Ticket{}, err
@@ -179,7 +179,7 @@ func CloseTicket(ticketID int64) error {
 	}
 
 	// Delete the ticket
-	_, err = tx.Exec("DELETE FROM tickets WHERE _id = ?", ticketID)
+	_, err = tx.Exec("DELETE FROM tickets WHERE id = ?", ticketID)
 	if err != nil {
 		return err
 	}
@@ -222,7 +222,7 @@ func GetUserIDByAccessTokenInt64(accessToken string) (int64, error) {
 // GetUserIDByTicketID retrieves the user ID associated with a ticket from the database.
 func GetUserIDByTicketID(ticketID int64) (int64, error) {
 	var userID int64
-	query := "SELECT userId FROM tickets WHERE _id = ?"
+	query := "SELECT userId FROM tickets WHERE id = ?"
 
 	err := db.QueryRow(query, ticketID).Scan(&userID)
 	if err != nil {

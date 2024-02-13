@@ -10,7 +10,7 @@ import (
 	"net/http"
 	"os"
 
-	//"os"
+	
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gorilla/mux"
@@ -37,10 +37,13 @@ func main() {
 	dbPassword := os.Getenv("DB_PASSWORD")
 	dbHost := os.Getenv("DB_HOST")
 	dbPort := os.Getenv("DB_PORT")
-	dbName := os.Getenv("DB_DATAASE")
+	dbName := os.Getenv("DB_DATABASE")
 
 	// Construct data source name
 	dataSourceName := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true", dbUser, dbPassword, dbHost, dbPort, dbName)
+
+	// Print dataSourceName for debugging
+	log.Println("DataSourceName:", dataSourceName)
 
 	// Initialize database connection
 	db, err := sql.Open("mysql", dataSourceName)
@@ -58,6 +61,10 @@ func main() {
 
 	// Set the database connection in the data package
 	data.SetDB(db)
+
+	// Rest of your code...
+
+
 
 
 

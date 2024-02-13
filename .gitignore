@@ -3,3 +3,14 @@
 /db-data
 
 web.exe
+
+Makefile
+
+db-data
+
+docker-compose.yml
+
+backup.sql
+
+Makefile
+
