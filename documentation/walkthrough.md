@@ -4,7 +4,13 @@
 
 # Walkthrough: Using the Ticket Platform API
 
-Welcome to the walkthrough of the Ticket Platform API. In this guide, we'll explore the functionality of the API endpoints, allowing you to register as a new user, verify your account, log in, raise tickets, interact with conversations, and more. T
+Welcome to the walkthrough of the Ticket Platform API. In this guide, we'll explore the functionality of the API endpoints, allowing you to register as a new user, verify your account, log in, raise tickets, interact with conversations, and more. 
+## Table of Contents
+1. [Prerequisites](#Prerequisites)
+2. [Registering as a New User](#Registering-as-a-New-User)
+3. [Verifying Your Account](#Verifying-Your-Account)
+4. [Logging In](#Logging-In)
+
 ## Prerequisites
 
 Before diving into the walkthrough, ensure you have an API testing tool like Postman installed. Alternatively, you can directly interact with the deployed API instance at https://ticketplatform.onrender.com/. Confirm the server's operation by visiting the link; if you see `{"message": "Hello, World!"}`, the server is up and running.
