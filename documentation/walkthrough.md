@@ -10,6 +10,14 @@ Welcome to the walkthrough of the Ticket Platform API. In this guide, we'll expl
 2. [Registering as a New User](#Registering-as-a-New-User)
 3. [Verifying Your Account](#Verifying-Your-Account)
 4. [Logging In](#Logging-In)
+5. [Accessing User Profile](#Accessing-User-Profile)
+6. [Raising Tickets](#Raising-Tickets)
+7. [Viewing Tickets](#Viewing-Tickets)
+8. [Interacting with Conversations](#Interacting-with-Conversations)
+9. [Closing Tickets](#Closing-Tickets)
+10. [Refreshing Tokens](#Refreshing-Tokens)
+11. [Logging Out](#Logging-Out)
+12. [Admin Privileges](#Admin-Privileges)
 
 ## Prerequisites
 
@@ -351,7 +359,7 @@ The `users` entry for an admin user in the database:
 
 To test, you will need to manually add an admin user to your MySQL database.
 
-### Admin View All Open Tickets
+### Viewing Tickets as Admin
 An admin user can send a GET request to `/admin/tickets`, using their access token as the Authorization Header, to view all tickets raised by users. It pulls all the tickets from the `tickets` table:
 
 
@@ -412,7 +420,7 @@ The admin can view a specific ticket and its coversations with a GET request to 
 }
 ```
 
-## Admin Add a Conversation To a Ticker
+## Interacting with Conversations as Admin
 The admin user can also send users a message for a specific ticket by sending a POST request to `/admin/tickets/{ticketID}/conversation` - in this case 4. As always, using the access token for Authorization.
 
 Body:
