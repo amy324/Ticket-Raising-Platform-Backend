@@ -1,4 +1,3 @@
-Got it! Here's the revised version of the project overview considering that there's no frontend and the focus is solely on showcasing a Golang backend:
 
 ---
 
