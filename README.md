@@ -1,70 +1,63 @@
-Of course! Here's an enhanced version of the README with additional details about the codebase:
+# Ticket-Raising Platform Backend
 
----
+Welcome to the Ticket-Raising Platform Backend repository! This project serves as a portfolio piece demonstrating best practices in Golang backend development. Below you'll find detailed documentation and guides for understanding and deploying the backend application.
 
-# Ticket Platform
+The server is currently live at https://ticketplatform.onrender.com/. Confirm the server's operation by visiting the link; if you see `{"message": "Hello, World!"}`, the server is up and running.
 
-![Ticket Platform Logo](link_to_your_logo)
 
-Welcome to Ticket Platform, a fully backend ticket raising platform designed to streamline the process of issue reporting and resolution. This platform allows users to submit tickets for various issues they encounter, and administrators can manage these tickets efficiently.
+## Project Overview
 
-## Features
+For an overview of the project objectives, features, and technologies used, please refer to the [Project Overview](documentation/deployment.mdprojectoverview.md) document.
 
-- **User Authentication**: Users can create accounts and log in securely to submit and track their tickets.
-- **Ticket Submission**: Users can submit tickets detailing their issues, providing essential information for resolution.
-- **Administrator Access**: Administrators have access to all submitted tickets and can manage them effectively.
-- **Ticket Management**: Administrators can view, update, and close tickets as needed, ensuring timely resolution.
-- **Email Notifications**: Users receive email notifications upon ticket submission and updates, facilitating communication.
+## Architecture Documentation
 
-## Demo
+To understand the architecture of the ticket-raising platform backend, including its components and deployment strategies, please read the [Architecture Documentation](architecture.md) document.
 
-Check out the live demo of Ticket Platform deployed at [https://ticketplatform.onrender.com/](https://ticketplatform.onrender.com/).
+## Deployment Guide
+
+For step-by-step instructions on deploying the backend application in various environments, please refer to the [Deployment Guide](documentation/deployment.md).
+
+## API Documentation
+
+To explore the API endpoints and understand how to interact with the backend services, please refer to the [API Documentation](documentation/api.md).
+
+## Authentication Documentation
+
+To learn about the user authentication mechanism implemented in the backend application, including authentication flow, implementation details, and security considerations, please read the [Authentication Documentation](documentation/authentication.md).
+
+## Walkthrough
+
+For a detailed walkthrough of the backend application's functionalities and usage scenarios, please refer to the [Walkthrough](documentation/walkthrough.md).
 
 ## Technologies Used
 
-- **Backend**: Go programming language
+- **Programming Language**: Golang
+- **Web Framework**: Gorilla Mux
 - **Database**: MySQL
-- **Email Service**: Mailtrap
+- **Mailer**: Mailtrap
+- **Authentication**: JSON Web Tokens (JWT)
+- **Deployment**: Render
+- **Testing**: Postman
+- **Version Control**: Git
 
-## Setup Instructions
 
-To set up the Ticket Platform locally, follow these steps:
+## Cloning Instructions
 
-1. **Clone the Repository**: Clone this repository to your local machine using `git clone https://github.com/your-username/ticket-platform.git`.
-2. **Install Dependencies**: Navigate to the project directory and install dependencies using `go mod tidy`.
-3. **Database Setup**: Set up a MySQL database and configure the database connection in the `config.go` file.
-4. **Email Service Setup**: Sign up for a Mailtrap account and configure the SMTP settings in the `config.go` file.
-5. **Build and Run**: Build and run the application using `go build` followed by `./ticket-platform`.
-6. **Access the Platform**: Access the platform in your web browser at `http://localhost:8080`.
+To clone and run the project locally, follow these steps:
 
-## Codebase Overview
+1. Ensure you have Git installed on your local machine.
+2. Open a terminal or command prompt.
+3. Navigate to the directory where you want to clone the project.
+4. Run the following command:
 
-The Ticket Platform codebase follows several Go programming language conventions, techniques, and methodologies:
-
-- **Structs**: Structs are used to represent entities such as `User`, `Ticket`, `Conversation`, and `AccessToken`, providing a clean and organized way to define data structures.
-
-- **Context**: The codebase utilizes the `context` package to manage context deadlines and cancellation, ensuring graceful handling of requests.
-
-- **Middleware**: Middleware functions are employed for tasks such as user authentication and admin access validation, enhancing modularity and reusability.
-
-- **Error Handling**: Error handling is implemented throughout the codebase using Go's built-in error handling mechanisms, such as `if err != nil`, to ensure robustness and reliability.
-
-- **Database Interactions**: The application interacts with a MySQL database using the `database/sql` package, following best practices for database operations such as querying, inserting, and updating data.
-
-- **Concurrency**: Go's concurrency features, such as goroutines and channels, are utilized where applicable to perform tasks concurrently, enhancing performance and responsiveness.
-
-- **Logging**: The `log` package is used for logging informative messages and error details, aiding in debugging and monitoring the application.
+```
+git clone <repository_url>
+```
 
 ## Contributing
 
-Contributions to Ticket Platform are welcome! If you find any bugs or have suggestions for improvements, please submit an issue or open a pull request.
+Contributions to the Ticket-Raising Platform Backend are welcome! If you have any suggestions, enhancements, or bug fixes, please feel free to open an issue or submit a pull request.
 
 ## License
 
-This project is licensed under the [MIT License](link_to_license).
-
-## Contact
-
-For any inquiries or feedback, feel free to contact us at [your-email@example.com](mailto:your-email@example.com).
-
----
+This project is licensed under the [MIT License](LICENSE).
