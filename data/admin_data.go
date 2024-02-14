@@ -10,7 +10,7 @@ func GetTickets() ([]Ticket, error) {
     defer cancel()
 
     // Query to retrieve all tickets
-    rows, err := db.QueryContext(ctx, "SELECT _id, userId, email, subject, issue, status, dateOpened FROM tickets")
+    rows, err := db.QueryContext(ctx, "SELECT id, userId, email, subject, issue, status, dateOpened FROM tickets")
     if err != nil {
         return nil, err
     }
