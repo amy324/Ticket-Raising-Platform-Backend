@@ -7,7 +7,7 @@ The server is currently live at https://ticketplatform.onrender.com/. Confirm th
 
 ## Project Overview
 
-For an overview of the project objectives, features, and technologies used, please refer to the [Project Overview](documentation/deployment.md) document.
+For an overview of the project objectives, features, and technologies used, please refer to the [Project Overview](documentation/projectoverview.md) document.
 
 ## Architecture Documentation
 
