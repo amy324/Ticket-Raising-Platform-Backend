@@ -41,7 +41,7 @@ func CreateTicket(userID int, subject, issue string) (int, error) {
 	}
 
 	// Insert the initial conversation for the ticket
-	_, err = addInitialConversation(int(ticketID), "operator", "have you tried turning it on and off again?")
+	_, err = addInitialConversation(int(ticketID), "operator", "We will be in touch with you shortly. In the meantime please feel free to reply to this message with more details")
 	if err != nil {
 		log.Printf("Error adding initial conversation: %v", err)
 		return 0, err
