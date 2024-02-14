@@ -1,23 +1,21 @@
+// user.go
 package data
 
 import (
 	"context"
-
 	"database/sql"
 	"errors"
 	"fmt"
 	"log"
-
-	"crypto/rand"
-	"math/big"
-
 	"os"
 	"strconv"
 	"time"
 
+	"crypto/rand"
+	"math/big"
+
 	"github.com/dgrijalva/jwt-go"
 	"golang.org/x/crypto/bcrypt"
-	//"time"
 )
 
 // SetDB sets the database connection for the package
@@ -51,11 +49,12 @@ func InitializeDB(user, password, host, port, dbname string) error {
 
 var ErrUserNotFound = errors.New("user not found")
 
-
+// Create inserts a new user into the database
 func (u *User) Create() (int, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
 	defer cancel()
 
+	// Hash the user's password
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(u.Password), 12)
 	if err != nil {
 		return 0, err
@@ -67,16 +66,13 @@ func (u *User) Create() (int, error) {
 		return 0, err
 	}
 
-	if err != nil {
-		return 0, err
-	}
-
 	// Generate a random 6-digit pin number for verification
 	pinNumber, err := GeneratePinNumber()
 	if err != nil {
 		return 0, err
 	}
 
+	// Insert user data into the database
 	var newID int
 	stmt := `
     INSERT INTO users (email, first_name, last_name, password, pin_number, user_active, is_admin, refreshJWT)
@@ -107,7 +103,7 @@ func (u *User) Create() (int, error) {
 	return newID, nil
 }
 
-// Helper function to generate a refresh token
+// generateRefreshToken generates a refresh token for the user
 func generateRefreshToken(userID int) (string, error) {
 	// Set the expiration time for the token (you can customize this)
 	expirationTime := time.Now().Add(24 * time.Hour)
@@ -122,7 +118,7 @@ func generateRefreshToken(userID int) (string, error) {
 	// Create the token with the claims
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
-	// Sign the token with a secret key (replace with your own secret key)
+	// Sign the token with a secret key
 	refreshJWT := []byte(os.Getenv("JWT_REFRESH_KEY"))
 	if len(refreshJWT) == 0 {
 		log.Fatal("JWT_REFRESH_KEY is not set in the environment")
@@ -135,7 +131,7 @@ func generateRefreshToken(userID int) (string, error) {
 	return signedToken, nil
 }
 
-// GetByEmail retrieves a user by email
+// GetUserByEmail retrieves a user by email
 func GetUserByEmail(email string) (*User, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
 	defer cancel()
@@ -165,6 +161,7 @@ func GetUserByEmail(email string) (*User, error) {
 	return &user, nil
 }
 
+// GeneratePinNumber generates a random 6-digit PIN number
 func GeneratePinNumber() (string, error) {
 	// Generate a random 6-digit number
 	num, err := rand.Int(rand.Reader, big.NewInt(1000000))
@@ -209,6 +206,7 @@ func AuthenticateUser(email, password string) (*User, error) {
 	return user, nil
 }
 
+// CreateAccessToken creates a new access token for the user
 func CreateAccessToken(userID int, userEmail string, accessToken string) (int64, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
 	defer cancel()
@@ -294,6 +292,7 @@ func UpdateRefreshToken(userID int, refreshToken string) error {
 	return err
 }
 
+// Logout removes the access token and refresh token for the user, effectively logging them out
 func (u *User) Logout() error {
 	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
 	defer cancel()
@@ -321,9 +320,6 @@ func GetUserIDByAccessToken(accessToken string) (int, error) {
 	var userID int
 	query := `SELECT user_id FROM access_tokens WHERE accessJWT = ?`
 
-	// Log the query being executed
-	log.Printf("Executing query to retrieve user ID for access token: %s", accessToken)
-
 	// Execute the query and scan the result
 	err := db.QueryRowContext(ctx, query, accessToken).Scan(&userID)
 	if err != nil {
@@ -333,9 +329,6 @@ func GetUserIDByAccessToken(accessToken string) (int, error) {
 		}
 		return 0, err
 	}
-
-	// Log the retrieved user ID
-	log.Printf("Retrieved user ID from database: %d", userID)
 
 	return userID, nil
 }
@@ -448,20 +441,21 @@ func GetUserEmailByAccessToken(accessToken string) (string, error) {
 
 	return userEmail, nil
 }
+
 // GetUserEmailByID retrieves the email associated with the provided user ID.
 func GetUserEmailByID(userID int) (string, error) {
-    ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
-    defer cancel()
+	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
+	defer cancel()
 
-    var userEmail string
-    err := db.QueryRowContext(ctx, "SELECT email FROM users WHERE id = ?", userID).Scan(&userEmail)
-    if err != nil {
-        if err == sql.ErrNoRows {
-            // Return an empty string if no email found for the user ID
-            return "", nil
-        }
-        return "", err
-    }
+	var userEmail string
+	err := db.QueryRowContext(ctx, "SELECT email FROM users WHERE id = ?", userID).Scan(&userEmail)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			// Return an empty string if no email found for the user ID
+			return "", nil
+		}
+		return "", err
+	}
 
-    return userEmail, nil
+	return userEmail, nil
 }

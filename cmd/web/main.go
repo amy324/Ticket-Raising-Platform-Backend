@@ -1,5 +1,4 @@
 // main.go
-
 package main
 
 import (
@@ -9,8 +8,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-
-	
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gorilla/mux"
@@ -24,7 +21,7 @@ func init() {
 	}
 }
 
-// helps to ensure server loads properly
+// HelloWorldHandler returns a simple "Hello, World!" message, helps ensures server loads
 func HelloWorldHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
@@ -62,19 +59,15 @@ func main() {
 	// Set the database connection in the data package
 	data.SetDB(db)
 
-	// Rest of your code...
-
-
-
-
-
-	// Update your router initialization in the main function
+	// Router initialization
 	router := mux.NewRouter()
+
+	// Registering API endpoints
 
 	// Registration endpoint (no authentication required)
 	router.HandleFunc("/register", RegisterHandler).Methods("POST")
 
-	// VerifyP pin endpoint to the router
+	// VerifyPin endpoint
 	router.HandleFunc("/verify-pin", VerifyPinHandler).Methods("POST")
 
 	// Login endpoint (no authentication required)
@@ -83,23 +76,38 @@ func main() {
 	// Logout endpoint (requires authentication)
 	router.Handle("/logout", validateAccessToken(http.HandlerFunc(LogoutHandler))).Methods("POST")
 
-	//Profile endpoint gets users profile
+	// Profile endpoint (requires authentication)
 	router.Handle("/profile", validateAccessToken(http.HandlerFunc(ProfileHandler))).Methods("GET")
 
-	// Routes for ticket operations
+	// Ticket endpoints
+
+	// Create ticket endpoint
 	router.HandleFunc("/tickets", CreateTicketHandler).Methods("POST")
+
+	// Add conversation to ticket endpoint
 	router.HandleFunc("/tickets/{ticketID}/conversation", AddConversationHandler).Methods("POST")
+
+	// Get all tickets endpoint
 	router.HandleFunc("/tickets", GetTicketsHandler).Methods("GET")
+
+	// Get ticket by ID endpoint
 	router.HandleFunc("/tickets/{ticketID}", GetTicketByIDHandler).Methods("GET")
+
+	// Close ticket endpoint
 	router.HandleFunc("/tickets/{ticketID}", CloseTicketHandler).Methods("DELETE")
 
-	//Routes for admin use
+	// Admin endpoints
+
 	// View all tickets (requires admin privilege)
 	router.Handle("/admin/tickets", validateAdminAccess(http.HandlerFunc(ViewAllTicketsHandler))).Methods("GET")
+
+	// Get ticket by ID for admin endpoint
 	router.Handle("/admin/tickets/{ticketID}", validateAdminAccess(http.HandlerFunc(AdminGetTicketByIDHandler))).Methods("GET")
+
+	// Add conversation to ticket for admin endpoint
 	router.Handle("/admin/tickets/{ticketID}/conversation", validateAdminAccess(http.HandlerFunc(AdminAddConversationHandler))).Methods("POST")
 
-	// Endpoint for token refreshing
+	// Token refreshing endpoint
 	router.HandleFunc("/tokens/refresh", func(w http.ResponseWriter, r *http.Request) {
 		refreshAccessToken(w, r, r.Header.Get("Authorization"), db)
 	}).Methods("POST")

@@ -1,3 +1,5 @@
+// mailer.go
+
 package main
 
 import (
@@ -10,38 +12,40 @@ import (
 // sendPinByEmail sends a PIN code to the specified email address
 func sendPinByEmail(email, pin string) error {
 	// SMTP server configuration
-	smtpHost := os.Getenv("SMTP_HOST")
-	smtpPortStr := os.Getenv("SMTP_PORT")
-	username := os.Getenv("SMTP_USERNAME")
-	password := os.Getenv("SMTP_PASSWORD")
+	smtpHost := os.Getenv("SMTP_HOST")         // SMTP server host
+	smtpPortStr := os.Getenv("SMTP_PORT")       // SMTP server port as string
+	username := os.Getenv("SMTP_USERNAME")     // SMTP username for authentication
+	password := os.Getenv("SMTP_PASSWORD")     // SMTP password for authentication
 
 	// Convert smtpPort string to integer
-	smtpPort, err := strconv.Atoi(smtpPortStr)
+	smtpPort, err := strconv.Atoi(smtpPortStr) // Convert port string to integer
 	if err != nil {
-		return err
+		return err // Return error if conversion fails
 	}
 
-	// Authentication
+	// Authentication using PlainAuth method
 	auth := smtp.PlainAuth("", username, password, smtpHost)
 
-	// Sender and recipient
+	// Sender and recipient email addresses
 	from := username // Using the same username as sender
-	to := []string{email}
+	to := []string{email} // Recipient email address
 
 	// Email content
-	subject := "Your PIN Code"
-	body := "Your PIN code is: " + pin
+	subject := "Your PIN Code" // Email subject
+	body := "Your PIN code is: " + pin // Email body containing the PIN code
 
 	// Constructing the email message
 	message := []byte("To: " + to[0] + "\r\n" +
 		"Subject: " + subject + "\r\n" +
 		"\r\n" + body + "\r\n")
 
-	// Sending the email
+	// Sending the email using SendMail method
 	err = smtp.SendMail(smtpHost+":"+strconv.Itoa(smtpPort), auth, from, to, message)
 	if err != nil {
-		return err
+		return err // Return error if sending email fails
 	}
+
+	// Log message if the PIN code is sent successfully
 	log.Println("PIN code sent successfully to", email)
-	return nil
+	return nil // Return nil (no error) if everything succeeds
 }

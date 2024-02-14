@@ -1,3 +1,5 @@
+// ticket_handlers.go
+
 package main
 
 import (
@@ -13,6 +15,7 @@ import (
 	"github.com/gorilla/mux"
 )
 
+// CreateTicketHandler handles requests to create a new ticket.
 func CreateTicketHandler(w http.ResponseWriter, r *http.Request) {
 	// Log the start of the handler
 	log.Println("Creating ticket...")
@@ -56,7 +59,6 @@ func CreateTicketHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Create ticket
 	ticketID, err := data.CreateTicket(userID, ticketData.Subject, ticketData.Issue)
-
 	if err != nil {
 		log.Println("Error creating ticket:", err)
 		http.Error(w, "Failed to create ticket", http.StatusInternalServerError)
@@ -67,6 +69,8 @@ func CreateTicketHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(struct{ TicketID int }{TicketID: ticketID})
 }
+
+// AddConversationHandler handles requests to add a conversation to a ticket.
 func AddConversationHandler(w http.ResponseWriter, r *http.Request) {
 	// Log the start of the handler
 	log.Println("Adding conversation...")

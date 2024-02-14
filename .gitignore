@@ -2,15 +2,5 @@
 
 /db-data
 
-
-
-Makefile
-
 db-data
-
-docker-compose.yml
-
-backup.sql
-
-Makefile
 

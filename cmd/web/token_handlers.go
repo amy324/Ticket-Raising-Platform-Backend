@@ -1,3 +1,5 @@
+// token_handlers.go
+
 package main
 
 import (
@@ -8,13 +10,12 @@ import (
 	"net/http"
 	"os"
 	"time"
-
 )
 
 var db *sql.DB
 var dbTimeout = 5 * time.Second
 
-// Handler for refreshing the access token
+// RefreshTokenHandler handles the refreshing of access tokens
 func RefreshTokenHandler(w http.ResponseWriter, r *http.Request) {
 	// Extract the refresh token from the Authorization header
 	refreshToken := r.Header.Get("Authorization")
@@ -55,7 +56,7 @@ func RefreshTokenHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
-// Function to update the access token and its expiration time in the database
+// updateAccessToken updates the access token and its expiration time in the database
 func updateAccessToken(db *sql.DB, timeout time.Duration, userID int, newAccessToken string, validityDuration time.Duration) error {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
@@ -72,6 +73,7 @@ func updateAccessToken(db *sql.DB, timeout time.Duration, userID int, newAccessT
 	return err
 }
 
+// refreshAccessToken is a helper function for refreshing the access token
 func refreshAccessToken(w http.ResponseWriter, r *http.Request, refreshToken string, db *sql.DB) {
 	// Validate the refresh token and get the user information
 	user, err := validateRefreshJWT(refreshToken, os.Getenv("JWT_REFRESH_KEY"))

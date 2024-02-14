@@ -1,3 +1,5 @@
+// user_handlers.go
+
 package main
 
 import (
@@ -11,75 +13,72 @@ import (
 )
 
 // RegisterHandler handles user registration
-// RegisterHandler handles user registration
 func RegisterHandler(w http.ResponseWriter, r *http.Request) {
-    var user data.User
-    err := json.NewDecoder(r.Body).Decode(&user)
-    if err != nil {
-        log.Println("Error decoding request payload:", err)
-        http.Error(w, "Invalid request payload", http.StatusBadRequest)
-        return
-    }
+	var user data.User
+	err := json.NewDecoder(r.Body).Decode(&user)
+	if err != nil {
+		log.Println("Error decoding request payload:", err)
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
+	}
 
-    // Check if the user already exists
-    exists, err := data.UserExists(user.Email)
-    if err != nil {
-        log.Println("Error checking user existence:", err)
-        http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-        return
-    }
-    if exists {
-        http.Error(w, "User already exists", http.StatusConflict)
-        return
-    }
+	// Check if the user already exists
+	exists, err := data.UserExists(user.Email)
+	if err != nil {
+		log.Println("Error checking user existence:", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+	if exists {
+		http.Error(w, "User already exists", http.StatusConflict)
+		return
+	}
 
-    // Generate a pin number for verification
-    pinNumber, err := data.GeneratePinNumber()
-    if err != nil {
-        log.Println("Error generating pin number:", err)
-        http.Error(w, "Error generating pin number", http.StatusInternalServerError)
-        return
-    }
+	// Generate a pin number for verification
+	pinNumber, err := data.GeneratePinNumber()
+	if err != nil {
+		log.Println("Error generating pin number:", err)
+		http.Error(w, "Error generating pin number", http.StatusInternalServerError)
+		return
+	}
 
-    // Set the generated pin number for the user
-    user.PinNumber = pinNumber
+	// Set the generated pin number for the user
+	user.PinNumber = pinNumber
 
-    // Create the user in the database
-    userID, err := user.Create()
-    if err != nil {
-        log.Println("Error creating user:", err)
-        http.Error(w, "Error creating user", http.StatusInternalServerError)
-        return
-    }
+	// Create the user in the database
+	userID, err := user.Create()
+	if err != nil {
+		log.Println("Error creating user:", err)
+		http.Error(w, "Error creating user", http.StatusInternalServerError)
+		return
+	}
 
-    // Retrieve the PIN from the database to ensure consistency
-    savedPin, err := data.GetPinByEmail(user.Email)
-    if err != nil {
-        log.Println("Error retrieving PIN from the database:", err)
-        http.Error(w, "Error retrieving PIN from the database", http.StatusInternalServerError)
-        return
-    }
+	// Retrieve the PIN from the database to ensure consistency
+	savedPin, err := data.GetPinByEmail(user.Email)
+	if err != nil {
+		log.Println("Error retrieving PIN from the database:", err)
+		http.Error(w, "Error retrieving PIN from the database", http.StatusInternalServerError)
+		return
+	}
 
-    // Send the PIN via email
-    // subject := "Verification Code"
-    body := fmt.Sprintf("Verification code for user %s: %s", user.Email, savedPin)
-    err = sendPinByEmail(user.Email, body) // This line calls the sendPinByEmail function
-    if err != nil {
-        log.Println("Error sending PIN via email:", err)
-        http.Error(w, "Error sending PIN via email", http.StatusInternalServerError)
-        return
-    }
+	// Send the PIN via email
+	body := fmt.Sprintf("Verification code for user %s: %s", user.Email, savedPin)
+	err = sendPinByEmail(user.Email, body) // This line calls the sendPinByEmail function
+	if err != nil {
+		log.Println("Error sending PIN via email:", err)
+		http.Error(w, "Error sending PIN via email", http.StatusInternalServerError)
+		return
+	}
 
-    // Respond with success message and include the PIN in the response
-    response := map[string]interface{}{
-        "message": "User registered successfully",
-        "userID":  userID,
-        "pin":     savedPin, // Include the PIN in the response
-    }
-    w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(response)
+	// Respond with success message and include the PIN in the response - would not normally include PIN in response but I have done so if someone without access to the Mailtrap account would look to test APIs
+	response := map[string]interface{}{
+		"message": "User registered successfully",
+		"userID":  userID,
+		"pin":     savedPin, // Include the PIN in the response
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
 }
-
 
 // VerifyPinHandler handles PIN verification
 func VerifyPinHandler(w http.ResponseWriter, r *http.Request) {
@@ -127,7 +126,7 @@ func VerifyPinHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
-
+// LoginHandler handles user login
 func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	var credentials struct {
 		Email    string `json:"email"`
@@ -140,8 +139,6 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
 	}
-
-	fmt.Println("Received login request for user:", credentials.Email)
 
 	// Authenticate the user
 	user, err := data.AuthenticateUser(credentials.Email, credentials.Password)
@@ -202,8 +199,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Printf("User %s successfully logged in\n", user.Email)
 }
 
-
-// LogoutHandler for user logout
+// LogoutHandler handles user logout
 func LogoutHandler(w http.ResponseWriter, r *http.Request) {
 	// Print the request URL and headers for debugging
 	fmt.Println("Request URL:", r.URL)
@@ -251,7 +247,7 @@ func LogoutHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
-
+// ProfileHandler handles user profile retrieval
 func ProfileHandler(w http.ResponseWriter, r *http.Request) {
 	// Log the start of the handler
 	log.Println("Fetching user profile...")

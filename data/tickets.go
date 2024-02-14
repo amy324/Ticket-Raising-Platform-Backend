@@ -1,16 +1,16 @@
+//tickets.go
 package data
 
 import (
 	"context"
 	"database/sql"
 	"log"
-
 	"time"
 )
 
-
 // CreateTicket creates a new ticket in the database and returns its ID.
 func CreateTicket(userID int, subject, issue string) (int, error) {
+    // Context with timeout to manage database operations
 	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
 	defer cancel()
 
@@ -54,6 +54,7 @@ func CreateTicket(userID int, subject, issue string) (int, error) {
 
 // addInitialConversation inserts the initial conversation message for a ticket.
 func addInitialConversation(ticketID int, sender, message string) (int, error) {
+    // Context with timeout to manage database operations
 	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
 	defer cancel()
 
@@ -79,9 +80,11 @@ func addInitialConversation(ticketID int, sender, message string) (int, error) {
 
 // AddConversation adds a conversation to a ticket in the database.
 func AddConversation(ticketID int64, sender, message string) (int64, error) {
+    // Context with timeout to manage database operations
 	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
 	defer cancel()
 
+	// Execute the SQL statement to add a conversation
 	result, err := db.ExecContext(ctx, "INSERT INTO conversations (ticketId, sender, message, messageSentAt) VALUES (?, ?, ?, ?)",
 		ticketID, sender, message, time.Now())
 	if err != nil {
@@ -93,15 +96,18 @@ func AddConversation(ticketID int64, sender, message string) (int64, error) {
 
 // GetTicketsByUserID retrieves all tickets for a given user ID.
 func GetTicketsByUserID(userID int64) ([]Ticket, error) {
+    // Context with timeout to manage database operations
 	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
 	defer cancel()
 
+	// Query to retrieve tickets by user ID
 	rows, err := db.QueryContext(ctx, "SELECT id, userId, email, subject, issue, status, dateOpened FROM tickets WHERE userId = ?", userID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
+	// Iterate over the result set and populate tickets slice
 	var tickets []Ticket
 	for rows.Next() {
 		var ticket Ticket
@@ -120,9 +126,11 @@ func GetTicketsByUserID(userID int64) ([]Ticket, error) {
 
 // GetTicketByID retrieves a ticket by its ID from the database.
 func GetTicketByID(ticketID int64) (Ticket, error) {
+    // Context with timeout to manage database operations
 	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
 	defer cancel()
 
+	// Query to retrieve a ticket by its ID
 	var ticket Ticket
 	err := db.QueryRowContext(ctx, "SELECT * FROM tickets WHERE id = ?", ticketID).
 		Scan(&ticket.ID, &ticket.UserID, &ticket.Email, &ticket.Subject, &ticket.Issue, &ticket.Status, &ticket.DateOpened)
@@ -135,9 +143,11 @@ func GetTicketByID(ticketID int64) (Ticket, error) {
 
 // GetConversationsByTicketID retrieves all conversations associated with a ticket ID from the database.
 func GetConversationsByTicketID(ticketID int64) ([]Conversation, error) {
+    // Context with timeout to manage database operations
 	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
 	defer cancel()
 
+	// Query to retrieve conversations by ticket ID
 	rows, err := db.QueryContext(ctx, "SELECT * FROM conversations WHERE ticketId = ?", ticketID)
 	if err != nil {
 		log.Printf("Error retrieving conversations by ticket ID: %v", err)
@@ -145,6 +155,7 @@ func GetConversationsByTicketID(ticketID int64) ([]Conversation, error) {
 	}
 	defer rows.Close()
 
+	// Iterate over the result set and populate conversations slice
 	var conversations []Conversation
 	for rows.Next() {
 		var conv Conversation
@@ -194,14 +205,13 @@ func CloseTicket(ticketID int64) error {
 
 // GetUserIDByAccessTokenInt64 retrieves the user ID associated with the given access token as int64.
 func GetUserIDByAccessTokenInt64(accessToken string) (int64, error) {
+    // Context with timeout to manage database operations
 	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
 	defer cancel()
 
+	// Query to retrieve user ID by access token
 	var userID int64
 	query := `SELECT user_id FROM access_tokens WHERE accessJWT = ?`
-
-	// Log the query being executed
-	log.Printf("Executing query to retrieve user ID for access token: %s", accessToken)
 
 	// Execute the query and scan the result
 	err := db.QueryRowContext(ctx, query, accessToken).Scan(&userID)
@@ -213,14 +223,12 @@ func GetUserIDByAccessTokenInt64(accessToken string) (int64, error) {
 		return 0, err
 	}
 
-	// Log the retrieved user ID
-	log.Printf("Retrieved user ID from database: %d", userID)
-
 	return userID, nil
 }
 
 // GetUserIDByTicketID retrieves the user ID associated with a ticket from the database.
 func GetUserIDByTicketID(ticketID int64) (int64, error) {
+    // Query to retrieve user ID by ticket ID
 	var userID int64
 	query := "SELECT userId FROM tickets WHERE id = ?"
 

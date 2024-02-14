@@ -1,3 +1,5 @@
+// token.go
+
 package main
 
 import (
@@ -14,7 +16,7 @@ import (
 	"github.com/dgrijalva/jwt-go"
 )
 
-
+// generateTokens generates access and refresh tokens for the given user
 func generateTokens(user *data.User) (string, string, error) {
 	// Generate access token with 30 minutes expiry
 	accessToken, err := generateAuthJWT(user, os.Getenv("JWT_ACCESS_KEY"), 30*time.Minute)
@@ -31,6 +33,7 @@ func generateTokens(user *data.User) (string, string, error) {
 	return accessToken, refreshToken, nil
 }
 
+// generateAuthJWT generates a JWT token with the given user information, secret key, and expiration time
 func generateAuthJWT(user *data.User, secretKey string, expirationTime time.Duration) (string, error) {
 	// Set the expiration time for the token
 	expiration := time.Now().Add(expirationTime)
@@ -59,6 +62,7 @@ func generateAuthJWT(user *data.User, secretKey string, expirationTime time.Dura
 	return signedToken, nil
 }
 
+// validateAccessToken validates the access token provided in the request header
 func validateAccessToken(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Extract the access token from the Authorization header
@@ -88,7 +92,7 @@ func validateAccessToken(next http.Handler) http.Handler {
 	})
 }
 
-// Function to validate the refresh token and retrieve user information
+// validateRefreshJWT validates the refresh token and retrieves user information
 func validateRefreshJWT(tokenString, secretKey string) (*data.User, error) {
 	token, err := jwt.ParseWithClaims(tokenString, &jwt.StandardClaims{}, func(token *jwt.Token) (interface{}, error) {
 		return []byte(secretKey), nil
@@ -117,7 +121,7 @@ func validateRefreshJWT(tokenString, secretKey string) (*data.User, error) {
 	return user, nil
 }
 
-
+// isTokenExpired checks if the access token is expired
 func isTokenExpired(accessToken string) bool {
 	// Get user ID associated with the access token
 	userID, err := data.GetUserIDByAccessToken(accessToken)
@@ -145,4 +149,3 @@ func isTokenExpired(accessToken string) bool {
 
 	return false
 }
-

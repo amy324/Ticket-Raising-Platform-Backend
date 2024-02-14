@@ -1,13 +1,15 @@
+// admin_handlers.go
+
 package main
 
 import (
-	"backend-project/data"
+	"backend-project/data" 
 	"encoding/json"
 	"log"
 	"net/http"
 	"strconv"
 
-	"github.com/gorilla/mux"
+	"github.com/gorilla/mux" 
 )
 
 // ViewAllTicketsHandler displays all existing tickets without fetching their associated messages
@@ -27,7 +29,7 @@ func ViewAllTicketsHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(tickets)
 }
 
-// GetTicketByIDHandler handles requests to retrieve a specific ticket by its ID along with its conversations.
+// AdminGetTicketByIDHandler handles requests to retrieve a specific ticket by its ID along with its conversations.
 func AdminGetTicketByIDHandler(w http.ResponseWriter, r *http.Request) {
 	// Log the start of the handler
 	log.Println("Getting ticket by ID...")
@@ -71,6 +73,7 @@ func AdminGetTicketByIDHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(ticketWithConversations)
 }
 
+// AdminAddConversationHandler adds a conversation to a ticket for admin users
 func AdminAddConversationHandler(w http.ResponseWriter, r *http.Request) {
 	// Log the start of the handler
 	log.Println("Adding conversation...")
