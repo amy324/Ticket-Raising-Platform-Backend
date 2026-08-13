@@ -1,61 +1,39 @@
 # Ticket-Raising Platform Backend
 
-Welcome to the Ticket-Raising Platform Backend repository! This project serves as a portfolio piece demonstrating best practices in Golang backend development. Below you'll find detailed documentation and guides for understanding and deploying the backend application.
+A backend system for a support ticket platform, built to demonstrate best practices in Go backend development. Documentation covering architecture, deployment, and usage is linked below.
 
+### Documentation
 
-## Project Overview
+* [**Project Overview:**](#documentation/projectoverview) objectives, features, and technologies used
+* [**Architecture:**](#documentation/architecture) components, design decisions, and deployment strategy
+* [**Deployment Guide:**](#documentation/deployment) step-by-step setup for different environments
+* [**API Documentation:**](#documentation/api) available endpoints and how to use them
+* [**Authentication:**](#documentation/authentication)  auth flow, implementation, and security considerations
+* [**Walkthrough:**](#documentation/walkthrough) a guided tour through the app's functionality
 
-For an overview of the project objectives, features, and technologies used, please refer to the [Project Overview](documentation/projectoverview.md) document.
+### Technologies Used
 
-## Architecture Documentation
+* **Language:** Go
+* **Web framework:** Gorilla Mux
+* **Database:** MySQL
+* **Mailer:** Mailtrap
+* **Authentication:** JSON Web Tokens (JWT)
+* **Deployment:** Render
+* **Testing:** Postman
+* **Version control:** Git
 
-To understand the architecture of the ticket-raising platform backend, including its components and deployment strategies, please read the [Architecture Documentation](documentation/architecture.md) document.
+### Running Locally
 
-## Deployment Guide
-
-For step-by-step instructions on deploying the backend application in various environments, please refer to the [Deployment Guide](documentation/deployment.md).
-
-## API Documentation
-
-To explore the API endpoints and understand how to interact with the backend services, please refer to the [API Documentation](documentation/api.md).
-
-## Authentication Documentation
-
-To learn about the user authentication mechanism implemented in the backend application, including authentication flow, implementation details, and security considerations, please read the [Authentication Documentation](documentation/authentication.md).
-
-## Walkthrough
-
-For a detailed walkthrough of the backend application's functionalities and usage scenarios, please refer to the [Walkthrough](documentation/walkthrough.md).
-
-## Technologies Used
-
-- **Programming Language**: Golang
-- **Web Framework**: Gorilla Mux
-- **Database**: MySQL
-- **Mailer**: Mailtrap
-- **Authentication**: JSON Web Tokens (JWT)
-- **Deployment**: Render
-- **Testing**: Postman
-- **Version Control**: Git
-
-
-## Cloning Instructions
-
-To clone and run the project locally, follow these steps:
-
-1. Ensure you have Git installed on your local machine.
-2. Open a terminal or command prompt.
-3. Navigate to the directory where you want to clone the project.
-4. Run the following command:
-
-```
+```bash
 git clone <repository_url>
 ```
 
-## Contributing
+Then follow the [Deployment Guide](#deployment-guide) for environment setup and configuration.
 
-Contributions to the Ticket-Raising Platform Backend are welcome! If you have any suggestions, enhancements, or bug fixes, please feel free to open an issue or submit a pull request.
+### Contributing
 
-## License
+Contributions are welcome, feel free to open an issue or submit a pull request with suggestions, improvements or fixes.
 
-This project is licensed under the [MIT License](LICENSE).
+### License
+
+Licensed under the [MIT License](LICENSE).
