@@ -2,8 +2,6 @@
 
 Welcome to the Ticket-Raising Platform Backend repository! This project serves as a portfolio piece demonstrating best practices in Golang backend development. Below you'll find detailed documentation and guides for understanding and deploying the backend application.
 
-The server is currently live at https://ticketplatform.onrender.com/. Confirm the server's operation by visiting the link; if you see `{"message": "Hello, World!"}`, the server is up and running.
-
 
 ## Project Overview
 
