@@ -4,12 +4,12 @@ A backend system for a support ticket platform, built to demonstrate best practi
 
 ### Documentation
 
-* [**Project Overview:**](#documentation/projectoverview) objectives, features, and technologies used
-* [**Architecture:**](#documentation/architecture) components, design decisions, and deployment strategy
-* [**Deployment Guide:**](#documentation/deployment) step-by-step setup for different environments
-* [**API Documentation:**](#documentation/api) available endpoints and how to use them
-* [**Authentication:**](#documentation/authentication)  auth flow, implementation, and security considerations
-* [**Walkthrough:**](#documentation/walkthrough) a guided tour through the app's functionality
+* [**Project Overview:**](documentation/projectoverview) objectives, features, and technologies used
+* [**Architecture:**](documentation/architecture) components, design decisions, and deployment strategy
+* [**Deployment Guide:**](documentation/deployment) step-by-step setup for different environments
+* [**API Documentation:**](documentation/api) available endpoints and how to use them
+* [**Authentication:**](documentation/authentication)  auth flow, implementation, and security considerations
+* [**Walkthrough:**](documentation/walkthrough) a guided tour through the app's functionality
 
 ### Technologies Used
 
@@ -27,7 +27,7 @@ A backend system for a support ticket platform, built to demonstrate best practi
 git clone <repository_url>
 ```
 
-Then follow the [Deployment Guide](#documentation/deployment) for environment setup and configuration.
+Then follow the [Deployment Guide](documentation/deployment) for environment setup and configuration.
 
 ### Contributing
 
