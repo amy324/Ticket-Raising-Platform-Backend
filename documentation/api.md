@@ -3,16 +3,6 @@
 
 # Ticket Platform API Documentation
 
-Welcome to the Ticket Platform API documentation. This API provides endpoints for managing user authentication, ticket creation, ticket conversations, and administrative tasks.
-
-## Base URL
-
-The base URL for all endpoints is:
-
-```
-https://ticketplatform.onrender.com/
-```
-
 ## Authentication
 
 ### Register
