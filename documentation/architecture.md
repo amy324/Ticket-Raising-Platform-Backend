@@ -48,18 +48,4 @@ Custom middleware handling authentication and token-based authorization.
 Used for sending notification emails on ticket updates and account actions. Mailtrap stands in for a real SMTP provider so the flow can be tested without sending to real inboxes.
 
 
-### Future Considerations
-
-This project demonstrates the core architecture, but a production deployment would need further work:
-
-* **Scaling:** horizontal scaling to handle increased traffic
-* **Security:** HTTPS, stricter input validation, more robust password storage
-* **Monitoring:** real-time performance tracking and error detection
-* **Containerization:** Docker, for portability and consistency across environments
-* **CI/CD:** automated testing and deployment pipeline
-* **Data protection:** compliance with relevant data protection regulations
-* **API testing:** a proper test suite covering functionality and performance
-* **Auth improvements:** more granular, fine-grained authorization controls
-
---- 
 
