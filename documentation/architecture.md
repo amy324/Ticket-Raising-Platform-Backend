@@ -45,11 +45,8 @@ Custom middleware handling authentication and token-based authorization.
 
 **Stack:** Mailtrap (email simulation).
 
-Used for sending notification emails on ticket updates and account actions — Mailtrap stands in for a real SMTP provider so the flow can be tested without sending to real inboxes.
+Used for sending notification emails on ticket updates and account actions. Mailtrap stands in for a real SMTP provider so the flow can be tested without sending to real inboxes.
 
-### Deployment
-
-Currently deployed on Render, connecting to a MySQL database for storage. Render was chosen for simplicity during development; the app itself isn't tied to it and could move to any host running Go with access to a MySQL instance.
 
 ### Future Considerations
 
