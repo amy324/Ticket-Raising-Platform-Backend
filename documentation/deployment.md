@@ -1,27 +1,17 @@
+# Deployment Instructions
 
----
+Instructions for deploying the backend to a new environment.
 
-# Deployment Guide
+### Prerequisites
 
-This guide offers comprehensive instructions for deploying the backend application across different environments.
+* The codebase, cloned locally (see README)
+* A MySQL database server (e.g. Alwaysdata)
+* A mail testing service (e.g. Mailtrap)
+* Environment variables configured for both
 
-## Prerequisites
+### 1. Set Up the MySQL Database
 
-Before proceeding with the deployment, ensure the following prerequisites are met:
-
-- Access to the backend application's codebase via cloning (see [README](../README.md) for details).
-- Access to a MySQL database server (e.g., Alwaysdata)
-- Access to a mail testing service (e.g., Mailtrap)
-- Proper configuration of environment variables for connecting to the database and email service
-
-## Deployment Process
-
-### 1. Setup MySQL Database
-
-1. Access your MySQL database server (e.g., Alwaysdata) and create a new database.
-2. Utilize the provided SQL schemas to create essential tables (`users`, `tickets`, `conversations`, `access_tokens`).
-
-Example SQL commands:
+Create a new database on your MySQL server, then run the schema below to set up the required tables.
 
 ```sql
 -- Create the 'users' table
@@ -71,33 +61,27 @@ CREATE TABLE `conversations` (
 
 ### 2. Configure Environment Variables
 
-Ensure the following environment variables are properly configured:
+| Variable          | Purpose                       |
+| ----------------- | ----------------------------- |
+| `DB_USER`         | MySQL username                |
+| `DB_PASSWORD`     | MySQL password                |
+| `DB_HOST`         | MySQL host                    |
+| `DB_PORT`         | MySQL port                    |
+| `DB_DATABASE`     | MySQL database name           |
+| `SMTP_HOST`       | Mailtrap SMTP host            |
+| `SMTP_PORT`       | Mailtrap SMTP port            |
+| `SMTP_USERNAME`   | Mailtrap username             |
+| `SMTP_PASSWORD`   | Mailtrap password             |
+| `JWT_ACCESS_KEY`  | JWT access token signing key  |
+| `JWT_REFRESH_KEY` | JWT refresh token signing key |
 
-- `DB_USER`: MySQL database username
-- `DB_PASSWORD`: MySQL database password
-- `DB_HOST`: MySQL database host
-- `DB_PORT`: MySQL database port
-- `DB_DATABASE`: MySQL database name
-- `SMTP_HOST`: Mailtrap SMTP host
-- `SMTP_PORT`: Mailtrap SMTP port
-- `SMTP_USERNAME`: Mailtrap username
-- `SMTP_PASSWORD`: Mailtrap password
-- `JWT_ACCESS_KEY`: JWT access key
-- `JWT_REFRESH_KEY`: JWT refresh key
+### 3. Deploy the Application
 
-### 3. Deploy Backend Application
+1. Clone the repository.
+2. Add the environment variables above to a `.env` file.
+3. Build the app. I used `go build` to produce `web.exe` locally, but any standard Go build process will work.
+4. Start the server, or run it directly with `go run` for local testing.
 
-1. Clone the repository containing the backend application.
-2. Configure the required environment variables in a `.env` file.
-3. If applicable, build the application using the appropriate build command, I used `go build` to build `web.exe` in my case.
-4. Start the application server.
+### 4. Test
 
-Alternatively, simply run on a localhost using the `go run` command.
-
-Alternatively, feel free 
-
-### 4. Testing
-
-Verify the proper functioning of the deployed backend application by testing the endpoints using tools like Postman.
-
----
+Verify the deployment by hitting the endpoints with a tool like Postman.
