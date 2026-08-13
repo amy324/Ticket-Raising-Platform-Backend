@@ -18,7 +18,6 @@ A backend system for a support ticket platform, built to demonstrate best practi
 * **Database:** MySQL
 * **Mailer:** Mailtrap
 * **Authentication:** JSON Web Tokens (JWT)
-* **Deployment:** Render
 * **Testing:** Postman
 * **Version control:** Git
 
@@ -28,7 +27,7 @@ A backend system for a support ticket platform, built to demonstrate best practi
 git clone <repository_url>
 ```
 
-Then follow the [Deployment Guide](#deployment-guide) for environment setup and configuration.
+Then follow the [Deployment Guide](#documentation/deployment) for environment setup and configuration.
 
 ### Contributing
 
