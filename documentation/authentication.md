@@ -1,15 +1,10 @@
+# User Authentication
 
----
+An overview of the authentication system behind the platform, built around JWTs to keep resource access secure without requiring users to log in repeatedly.
 
-# User Authentication Documentation
+### Authentication Flow
 
-This document provides an in-depth overview of the user authentication mechanism integrated into the ticket-raising platform project. Employing JWT (JSON Web Tokens), this authentication system ensures secure access to resources while preventing unauthorized access to sensitive data.
-
-## Authentication Flow
-
-The authentication flow comprises the following steps:
-
-1. **User Registration**: Users register by providing essential details such as email and password, optionally including first and last names. Upon successful validation, a new user account is created in the database.
+**User registration:** users sign up with an email and password, optionally including their name. Once validated, a new account is created.
 
 ```go
 // RegisterHandler manages user registration requests.
@@ -19,7 +14,7 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 }
 ```
 
-2. **Pin Verification**: A 6-digit PIN is sent to the user's provided email address for account activation. Upon successful PIN verification, the user account is marked as active in the database and ready for login.
+**PIN verification:** a 6-digit PIN is emailed to the user to activate their account. Once verified, the account is marked active and ready for login.
 
 ```go
 // VerifyPinHandler handles PIN verification.
@@ -30,7 +25,7 @@ func VerifyPinHandler(w http.ResponseWriter, r *http.Request) {
 }
 ```
 
-3. **User Login**: Registered users can log in using their email and password. The server verifies the credentials and issues JWT tokens upon successful authentication.
+**Login:** registered users log in with email and password. On success, the server issues JWT tokens.
 
 ```go
 // LoginHandler manages user login requests.
@@ -41,7 +36,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 }
 ```
 
-4. **JWT Generation**: After successful login, the server generates JWT access and refresh tokens. The access token contains user identification details and provides access to protected resources. The refresh token facilitates obtaining a new access token without requiring reauthentication.
+**JWT generation:** after login, the server issues an access token (used to reach protected resources) and a refresh token (used to get a new access token without logging in again).
 
 ```go
 // GenerateJWT generates a new JWT token.
@@ -52,7 +47,7 @@ func GenerateJWT(user User) (string, string, error) {
 }
 ```
 
-5. **Access Control**: Protected endpoints require authentication, enforced by middleware functions. These functions validate JWT tokens and grant access only to authenticated users.
+**Access control:** protected endpoints are gated by middleware that validates the JWT before allowing access.
 
 ```go
 // validateAccessToken validates JWT access tokens.
@@ -65,7 +60,7 @@ func validateAccessToken(next http.Handler) http.Handler {
 }
 ```
 
-6. **Token Refresh**: When an access token expires, users can use the refresh token to obtain a new access token without logging in again. This mechanism enhances user experience by minimizing the need for frequent logins.
+**Token refresh** — when an access token expires, the refresh token can be used to get a new one without re-authenticating.
 
 ```go
 // refreshAccessToken generates a new access token using a refresh token.
@@ -76,7 +71,7 @@ func refreshAccessToken(w http.ResponseWriter, r *http.Request, refreshToken str
 }
 ```
 
-7. **Admin Privileges**: Certain functionalities are restricted to admin users, requiring additional privileges. Admin status is assigned during user registration or manually configured in the database.
+**Admin privileges:** some functionality is restricted to admins, assigned either at registration or manually in the database.
 
 ```go
 // ViewAllTicketsHandler retrieves all tickets from the database.
@@ -87,36 +82,21 @@ func ViewAllTicketsHandler(w http.ResponseWriter, r *http.Request) {
 }
 ```
 
-## User Privileges
+### User Roles
 
-1. **User Roles**: Each user account is assigned a role determining access levels and privileges. Roles include:
-   - **User**: Standard users who can raise tickets, view their own tickets, and perform basic operations.
-   - **Admin**: Administrators with additional privileges such as viewing all tickets, adding conversations to any ticket, and closing tickets.
+* **User:** can raise tickets, view their own tickets, and perform basic operations.
+* **Admin:** can view all tickets, add conversations to any ticket, and close tickets.
 
-2. **Authorization**: Endpoint access is restricted based on the user's role:
-   - Regular users can manage their own tickets.
-   - Administrators have access to all tickets and perform administrative tasks.
+Role is embedded in the JWT claims and checked server-side on every protected request.
 
-3. **JWT Claims**: JWT tokens include claims specifying the user's role and permissions, verified server-side to enforce access control policies.
+### Implementation Notes
 
-## Implementation Details
+* Tokens are signed with a secret key to prevent tampering.
+* Access tokens are short-lived (e.g. 15 minutes); refresh tokens last longer (e.g. 7 days) to limit exposure if one is compromised.
+* Middleware enforces both authentication and role checks on protected endpoints.
 
-- **JWT Token Generation**: Secure JWT tokens are generated using robust algorithms and signed with a secret key to prevent tampering.
-- **Token Expiry**: Access tokens have a short lifespan (e.g., 15 minutes), while refresh tokens remain valid for a longer duration (e.g., 7 days) to mitigate misuse risks.
-- **Token Refresh**: Upon access token expiry, clients utilize refresh tokens to obtain new access tokens without reauthentication.
-- **Authorization Middleware**: Middleware functions enforce authentication and authorization checks on protected endpoints, validating JWT tokens and verifying user roles.
+### Security
 
-## Security Considerations
-
-- **Secure Storage**: Sensitive data, including user credentials, are securely stored in the database using hashed passwords and encryption techniques.
-- **HTTPS**: API endpoints are served over HTTPS to maintain data confidentiality and integrity during transmission.
-- **Input Validation**: Request data undergoes validation and sanitization to prevent common security vulnerabilities like SQL injection and XSS attacks.
-
----
-
-## Conclusion
-
-The user authentication system integrated into the ticket-raising platform ensures secure resource access and protects sensitive data. Leveraging JWT tokens and access control mechanisms, the platform maintains user account integrity and confidentiality, providing a seamless user experience.
-
---- 
-
+* Passwords are hashed before storage.
+* API endpoints are served over HTTPS.
+* Request data is validated and sanitized to guard against SQL injection and XSS.
