@@ -60,7 +60,7 @@ func validateAccessToken(next http.Handler) http.Handler {
 }
 ```
 
-**Token refresh** — when an access token expires, the refresh token can be used to get a new one without re-authenticating.
+**Token refresh:** when an access token expires, the refresh token can be used to get a new one without re-authenticating.
 
 ```go
 // refreshAccessToken generates a new access token using a refresh token.
