@@ -19,9 +19,9 @@ A step-by-step guide to the API — registering, verifying your account, logging
 
 ### Prerequisites
 
-You'll want an API testing tool like Postman, or you can interact directly with the deployed instance at `https://ticketplatform.onrender.com/`. Visit the link to confirm it's running — you should see `{"message": "Hello, World!"}`.
+As this project only contains backend code and no GUI, you'll want an API testing tool like Postman or you could make the requests via your command line terminal.  
 
-**Note:** protected endpoints below require the access token in the `Authorization` header — this is called out explicitly for the first few endpoints, then assumed from there on. Please use dummy data throughout; avoid entering real personal information.
+**Note:** protected endpoints below require the access token in the `Authorization` header. This is called out explicitly for the first few endpoints, then assumed from there on. Please use dummy data throughout; avoid entering real personal information.
 
 ### Registering a New User
 
@@ -126,7 +126,7 @@ Response:
 }
 ```
 
-In a real deployment these tokens should never be shared — here the response shows the actual token strings rather than placeholders. Again, stick to dummy data when testing.
+In a real deployment these tokens should never be shared. Here the response shows the actual token strings rather than placeholders. Again, stick to dummy data when testing.
 
 An entry is created in `access_tokens`:
 
